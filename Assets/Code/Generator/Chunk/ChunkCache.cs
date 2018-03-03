@@ -99,6 +99,7 @@ namespace TerrainGenerator
             }
         }
 
+
         private void CreateTerrainForReadyChunks()
         {
             var anyTerrainCreated = false;
@@ -108,78 +109,18 @@ namespace TerrainGenerator
             {
                 if (chunk.Value.IsHeightmapReady())
                 {
-                    /*
-                     Need to average chunk edges with neighbours here
-                     in order to remove seams at chunk edges
-                     */
-                    #region Old Edge blending code
-                    //Vector2i chunkKey = chunk.Key;
-                    //TerrainChunk xUp;
-                    //TerrainChunk xDown;
-                    //TerrainChunk zUp;
-                    //TerrainChunk zDown;
-
-                    ////if we cant find the neighbour in the generating queue, check loaded chunks
-                    //if (!ChunksBeingGenerated.TryGetValue(new Vector2i(chunkKey.X + 1, chunkKey.Z), out xUp))
-                    //{
-                    //    LoadedChunks.TryGetValue(new Vector2i(chunkKey.X + 1, chunkKey.Z), out xUp);
-                    //}
-                    //if (!ChunksBeingGenerated.TryGetValue(new Vector2i(chunkKey.X - 1, chunkKey.Z), out xDown))
-                    //{
-                    //    LoadedChunks.TryGetValue(new Vector2i(chunkKey.X + 1, chunkKey.Z), out xUp);
-                    //}
-                    //if (!ChunksBeingGenerated.TryGetValue(new Vector2i(chunkKey.X, chunkKey.Z + 1), out zUp))
-                    //{
-                    //    LoadedChunks.TryGetValue(new Vector2i(chunkKey.X, chunkKey.Z + 1), out zUp);
-                    //}
-                    //if (!ChunksBeingGenerated.TryGetValue(new Vector2i(chunkKey.X, chunkKey.Z - 1), out zDown))
-                    //{
-                    //    LoadedChunks.TryGetValue(new Vector2i(chunkKey.X, chunkKey.Z - 1), out zDown);
-                    //}
-
-                    //var chunkHeightmap = chunk.Value.Heightmap;
-                    //if (xUp != null) //east neighbour
-                    //{
-                    //    Debug.Log("Blending edge of" + chunk.Value.Position.X + ", " + chunk.Value.Position.Z + " to east");
-                    //    var chunkBHeightmap = xUp.Heightmap;
-                    //    MathUtils.AverageBothChunks(ref chunkHeightmap, ref chunkBHeightmap, EdgeDirection.NORTH, true);
-                    //    chunk.Value.Heightmap = chunkHeightmap;
-                    //    xUp.Heightmap = chunkBHeightmap;
-                    //}
-                    //if (xDown != null) //west neighbour
-                    //{
-                    //    var chunkBHeightmap = xDown.Heightmap;
-                    //    MathUtils.AverageBothChunks(ref chunkHeightmap, ref chunkBHeightmap, EdgeDirection.SOUTH, true);
-                    //    chunk.Value.Heightmap = chunkHeightmap;
-                    //    xDown.Heightmap = chunkBHeightmap;
-                    //}
-                    //if (zUp != null) // north neighbour
-                    //{
-                    //    var chunkBHeightmap = zUp.Heightmap;
-                    //    MathUtils.AverageBothChunks(ref chunkHeightmap, ref chunkBHeightmap, EdgeDirection.EAST, true);
-                    //    chunk.Value.Heightmap = chunkHeightmap;
-                    //    zUp.Heightmap = chunkBHeightmap;
-
-                    //}
-                    //if (zDown != null) //south neighbour
-                    //{
-                    //    var chunkBHeightmap = zDown.Heightmap;
-                    //    MathUtils.AverageBothChunks(ref chunkHeightmap, ref chunkBHeightmap, EdgeDirection.WEST, true);
-                    //    chunk.Value.Heightmap = chunkHeightmap;
-                    //    zDown.Heightmap = chunkBHeightmap;
-                    //}
-                    #endregion
-
                     ChunksBeingGenerated.Remove(chunk.Key);
                     LoadedChunks.Add(chunk.Key, chunk.Value);
-
+                    
+                    SetChunkNeighborhood(chunk.Value);
+                    
                     chunk.Value.CreateTerrain();
 
                     anyTerrainCreated = true;
                     if (OnChunkGenerated != null)
                         OnChunkGenerated.Invoke(ChunksBeingGenerated.Count);
 
-                    SetChunkNeighborhood(chunk.Value);
+                    //SetChunkNeighborhood(chunk.Value);
                 }
             }
 
@@ -187,11 +128,13 @@ namespace TerrainGenerator
                 UpdateAllChunkNeighbors();
         }
 
+
         private void TryToDeleteQueuedChunks()
         {
             var chunksToRemove = ChunksToRemove.ToList();
             foreach (var chunkPosition in chunksToRemove)
             {
+              
                 if (RequestedChunks.ContainsKey(chunkPosition))
                 {
                     RequestedChunks.Remove(chunkPosition);
@@ -249,5 +192,7 @@ namespace TerrainGenerator
             foreach (var chunkEntry in LoadedChunks)
                 chunkEntry.Value.UpdateNeighbors();
         }
+
+        
     }
 }

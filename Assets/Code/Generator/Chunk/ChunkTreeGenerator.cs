@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using TerrainGenerator;
 using UnityEngine;
+using Utils;
 
 public class ChunkTreeGenerator : MonoBehaviour {
 
@@ -67,22 +68,16 @@ public class ChunkTreeGenerator : MonoBehaviour {
 
                     GameObject tree = (GameObject)Resources.Load("BTree");
                     var spawnposition = pos + offsetPosition;
-                    var spawned = Instantiate(tree, offsetPosition, randomRotation);
-                    spawned.transform.position = spawnposition;
-                    spawned.transform.localScale = spawned.transform.localScale + randomSize;
-                    spawned.transform.parent = this.transform;
-
-
-                    var modifiedPos = spawned.transform.position;
-                    if (IsValidPosition(ref modifiedPos))
+                   
+                    if (IsValidPosition(ref spawnposition))
                     {
-                        spawned.transform.position = modifiedPos;
+                        var spawned = Instantiate(tree, spawnposition, randomRotation);
+                        //spawned.transform.position = spawnposition;
+                        spawned.transform.localScale = spawned.transform.localScale + randomSize;
+                        spawned.transform.parent = this.transform;
                         TreesList.Add(spawned);
                     }
-                    else
-                    {
-                        Destroy(spawned);
-                    }
+
 
                 }
             }
@@ -94,48 +89,52 @@ public class ChunkTreeGenerator : MonoBehaviour {
     private bool IsValidPosition(ref Vector3 position)
     {
         bool placeable = true;
-
         RaycastHit hit = new RaycastHit();
-        if (Physics.Raycast(position, Vector3.down, out hit, 200))
+        if (Physics.Raycast(position, Vector3.down, out hit, 1000))
         {
-
-            if (hit.collider.gameObject.name == "Terrain")
+            
+            if (hit.collider.gameObject.tag == "Terrain")
             {
                 //Debug.DrawLine(position, hit.point, Color.red, 500f);
                 if (hit.point.y < 10.5f) //below global sealevel
                 {
-                    
+                    //Debug.DrawLine(position, hit.point, Color.blue, 500f);
                     placeable = false;
                 }
                 else
                 {
+                    //Debug.DrawLine(position, hit.point, Color.red, 500f);
                     position = new Vector3(position.x, hit.point.y - 0.08f, position.z);
                 }
 
             }
             //Debug.DrawLine(position, hit.point, Color.blue, 500f);
         }
-        else if (Physics.Raycast(position, Vector3.up, out hit, 200))
+        else if (Physics.Raycast(position, Vector3.up, out hit, 1000))
         {
             //Debug.DrawLine(position, hit.point, Color.green, 500f);
 
-            if (hit.collider.gameObject.name == "Terrain")
+            if (hit.collider.gameObject.tag == "Terrain")
             {
+                
                 if (hit.point.y < 10.5f) //below global sealevel
                 {
                     //Debug.Log("I am below sealevel");
+                    //Debug.DrawLine(position, hit.point, Color.blue, 500f);
                     placeable = false;
                 }
                 else
                 {
+                    //Debug.DrawLine(position, hit.point, Color.green, 500f);
                     position = new Vector3(position.x, hit.point.y - 0.08f, position.z);
                 }
-                
+
             }
             //Debug.DrawLine(position, hit.point, Color.yellow, 500f);
         }
         else
         {
+            //Debug.Log("Hit nothing! FFS");
             placeable = false;
         }
 

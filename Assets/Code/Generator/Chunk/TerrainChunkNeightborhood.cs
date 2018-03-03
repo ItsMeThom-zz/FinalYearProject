@@ -1,4 +1,6 @@
-﻿namespace TerrainGenerator
+﻿using System.Collections.Generic;
+
+namespace TerrainGenerator
 {
     public class TerrainChunkNeighborhood
     {
@@ -9,7 +11,10 @@
         public TerrainChunk ZUp { get; set; }
 
         public TerrainChunk ZDown { get; set; }
+
     }
+
+
 
     public enum TerrainNeighbor
     {

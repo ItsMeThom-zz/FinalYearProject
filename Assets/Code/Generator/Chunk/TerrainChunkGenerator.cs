@@ -13,6 +13,7 @@ namespace TerrainGenerator
 
         public Texture2D FlatTexture;
         public Texture2D SteepTexture;
+        public Texture2D SandTexture;
 
         private TerrainChunkSettings Settings;
 
@@ -28,7 +29,7 @@ namespace TerrainGenerator
             WorldGenerator.GenerateWorldMap();
 
             var BiomeWorldmap = WorldGenerator.ElevationData;
-            Settings = new TerrainChunkSettings(129, 129, 129, 40, FlatTexture, SteepTexture, TerrainMaterial);
+            Settings = new TerrainChunkSettings(129, 129, 129, 40, FlatTexture, SteepTexture, SandTexture, TerrainMaterial);
            // Debug.Log("Settings Created");
             NoiseProvider = new NoiseProvider();
 
@@ -80,7 +81,8 @@ namespace TerrainGenerator
             //Debug.Log("TCG.GenerateChunk()  => " + "[" + x + "," + z +"]");
             if (Cache.ChunkCanBeAdded(x, z))
             {
-                var chunk = new TerrainChunk(Settings, WorldGenerator, NoiseProvider, x, z);
+                ChunkEdge edgetype = CheckChunkIsEdge(new Vector2i(x, z));
+                var chunk = new TerrainChunk(Settings, WorldGenerator, edgetype, x, z);
                 Cache.AddNewChunk(chunk);
             }
         }
@@ -120,7 +122,10 @@ namespace TerrainGenerator
                 GenerateChunk(position.X, position.Z);
 
             foreach (var position in chunksToRemove)
+            {
                 RemoveChunk(position.X, position.Z);
+            }
+                
         }
 
         public Vector2i GetChunkPosition(Vector3 worldPosition)
@@ -129,6 +134,92 @@ namespace TerrainGenerator
             var z = (int)Mathf.Floor(worldPosition.z / Settings.Length);
 
             return new Vector2i(x, z);
+        }
+
+        public ChunkEdge CheckChunkIsEdge(Vector2i Position)
+        {
+            ChunkEdge edgetype = ChunkEdge.NotEdge;
+            var mapwidth = WorldGenerator.MAP_SIZE -  1;
+            var mapheight = WorldGenerator.MAP_SIZE - 1;
+            if (Position.X == (int)(mapwidth / 2) - mapwidth) //leftmost edge
+            {
+                if (Position.Z == (int)(mapheight / 2) - mapheight)
+                {
+                    //top left
+                    
+                    edgetype = ChunkEdge.TL;
+                }
+                else if (Position.Z == (int)(mapheight / 2))
+                {
+                    //bottom left
+                    edgetype = ChunkEdge.BL;
+                }
+                else
+                {
+                    //left
+                    edgetype = ChunkEdge.L;
+                }
+            }
+            else if (Position.X == (int)(mapwidth / 2)) //right edge
+            {
+                if (Position.Z == (int)(mapheight / 2) - mapheight)
+                {
+                    //top right
+                    edgetype = ChunkEdge.TR;
+                }
+                else if (Position.Z == (int)(mapheight / 2))
+                {
+                    //bottom right
+                    edgetype = ChunkEdge.BR;
+                }
+                else
+                {
+                    //right
+                    edgetype = ChunkEdge.R;
+                }
+            }
+            else if (Position.Z == (int)(mapheight / 2) - mapwidth) //top edge
+            {
+                if (Position.X == (int)(mapwidth / 2) - mapwidth)
+                {
+                    //top left
+                    edgetype = ChunkEdge.TL;
+                }
+                else if (Position.X == (int)(mapwidth / 2))
+                {
+                    //top right
+                    edgetype = ChunkEdge.TR;
+                }
+                else
+                {
+                    //top
+                    edgetype = ChunkEdge.T;
+                }
+            }
+            else if (Position.Z == (int)(mapwidth / 2)) //bottom edge
+            {
+                if (Position.X == (int)(mapheight / 2) - mapheight)
+                {
+                    //bottom left
+                    edgetype = ChunkEdge.BL;
+                }
+                else if (Position.X == (int)(mapheight / 2))
+                {
+                    //bottom right
+                    edgetype = ChunkEdge.BR;
+                }
+                else
+                {
+                    //bottom
+                    edgetype = ChunkEdge.B;
+                }
+            }
+            else
+            {
+                edgetype = ChunkEdge.NotEdge;
+            }
+            //Debug.Log("ctor: Chunk is " + edgetype);
+            return edgetype;
         }
 
         public bool IsTerrainAvailable(Vector3 worldPosition)

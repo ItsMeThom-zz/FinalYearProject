@@ -7,14 +7,14 @@ using System.Linq;
 using System.Text;
 using TerrainGenerator;
 using UnityEngine;
-
+using Utils;
 
 namespace WorldGen
 {
     public class WorldGenerator
     {
-        public int BaseSeed = 55051337;
-        public int MAP_SIZE = 16;
+        public int BaseSeed = 12345678;
+        public static int MAP_SIZE = 16;
 
         private Perlin WorldMapProvider;
 
@@ -22,9 +22,16 @@ namespace WorldGen
         #region Chunk NoiseProviders
         public LibNoise.ModuleBase ChunkBlendProvider { get; set; }
         public LibNoise.ModuleBase OceanProvider { get; set; }
+        public LibNoise.ModuleBase BeachProvider { get; set; }
         public LibNoise.ModuleBase PlainsProvider { get; set; }
         public LibNoise.ModuleBase MountainsProvider { get; set; }
         public LibNoise.ModuleBase HillsProvider { get; set; }
+
+
+        public float ElevationMaxValue { get; private set; }
+        public float ElevationMinValue { get; private set; }
+        public float MoisutreMaxValue { get; private set; }
+        public float MoisutreMinValue { get; private set; }
 
         //THOM: Refactor to wrap Noise configurations in cleaner handler class <INoiseProvider>
         /*
@@ -45,7 +52,7 @@ namespace WorldGen
         #endregion
 
         #region Biome Handling
-        public KNNBiomeGraph BiomeGraph;
+        public KLineGraph BiomeGraph;
         #endregion
 
         //feature handling
@@ -59,6 +66,8 @@ namespace WorldGen
 
         public WorldGenerator()
         {
+            this.ElevationMaxValue = 0.0f;
+            this.ElevationMinValue = float.MaxValue;
             InitNoiseProviders();
             PopulateBiomeGraph();
 
@@ -75,6 +84,7 @@ namespace WorldGen
             this.WorldMapProvider = InitWorldProvider();
             this.ChunkBlendProvider = InitChunkBlendProvider();
             this.OceanProvider = InitOceanProvider();
+            this.BeachProvider = InitBeachProvider();
             this.HillsProvider = InitHillsProvider();
             this.PlainsProvider = InitPlainsProvider();
             this.MountainsProvider = InitMountainsProvider();
@@ -118,8 +128,27 @@ namespace WorldGen
             };
             ScaleBias provider = new ScaleBias(baseTerrain)
             {
-                Scale = 0.1f,
-                Bias = -0.5f
+                Scale = 0.125f,
+                Bias = -1.0f
+            };
+            return provider;
+        }
+
+        public LibNoise.ModuleBase InitBeachProvider()
+        {
+            //Generate Smooth Perlin Noise
+            //ScaleBias to be almost 0 to blend with (OCEAN HEIGHT)
+            Perlin baseTerrain = new Perlin()
+            {
+                OctaveCount = 9,
+                Frequency = 0.9,
+                Persistence = 0.225
+
+            };
+            ScaleBias provider = new ScaleBias(baseTerrain)
+            {
+                Scale = 0.225f,
+                Bias = -0.3f
             };
             return provider;
         }
@@ -219,6 +248,8 @@ namespace WorldGen
 
         public void GenerateWorldMap()
         {
+            //float[,] islandmask = TerrainUtils.GetIslandMask(MAP_SIZE);
+
             this.InitWorldmapData();
             //worldperlin generates the overall worldmap for sampling heights from for biomes
             float SCALE = 20.0f; //scaling the perlin to be larger (low res)
@@ -232,8 +263,26 @@ namespace WorldGen
                     float moistX = biomeX + moisutreOffset;
                     float moistZ = biomeZ + moisutreOffset;
 
-                    ElevationData[x, z] = (float)(WorldMapProvider.GetValue(biomeX, 0, biomeZ)) + 2f / 0.5f;
+                    ElevationData[x, z] = ((float)(WorldMapProvider.GetValue(biomeX, 0, biomeZ)) + 2f / 0.5f);// * islandmask[x,z];
+                    //track the max and min values for normalisation later
+                    if(ElevationData[x,z] > this.ElevationMaxValue)
+                    {
+                        ElevationMaxValue = ElevationData[x, z];
+                    }
+                    if (ElevationData[x,z] < this.ElevationMinValue)
+                    {
+                        ElevationMinValue = ElevationData[x, z];
+                    }
                     MoistureData[x, z] = (float)(WorldMapProvider.GetValue(moistX, 0, moistZ)) + 2f / 0.5f;
+                    if (MoistureData[x, z] > this.MoisutreMaxValue)
+                    {
+                        MoisutreMaxValue = MoistureData[x, z];
+                    }
+                    if (MoistureData[x, z] < this.MoisutreMinValue)
+                    {
+                        MoisutreMinValue = MoistureData[x, z];
+                    }
+
                 }
             }
 
@@ -248,14 +297,7 @@ namespace WorldGen
         public void PopulateBiomeGraph()
         {
             //static values for now. move later
-            this.BiomeGraph = new KNNBiomeGraph(
-                new List<KNNBiomePoint>(){
-                    new KNNBiomePoint(0.0f, 1.0f, BiomeType.Ocean),
-                    new KNNBiomePoint(0.4f, 0.4f, BiomeType.Plains),
-                    new KNNBiomePoint(0.7f, 0.4f, BiomeType.Hills),
-                    new KNNBiomePoint(0.8f, 0.4f, BiomeType.Mountains),
-                }
-            );
+            this.BiomeGraph = new KLineGraph();
 
         }
         #endregion
@@ -270,11 +312,12 @@ namespace WorldGen
         /// <returns>BiomeType[] biomes that impact this point</returns>
         public BiomeType[] GetChunkBiomes(Vector2i position)
         {
+            
             BiomeType[] impactors = new BiomeType[2];
             if (IsValidMapPosition(position))
             {
                 Pair<float, float> worldmapSamples = GetChunkSampleValues(position);
-                impactors = BiomeGraph.FindNearest(2, worldmapSamples).Keys.ToArray();
+                impactors = new BiomeType[] { BiomeType.Hills, BiomeType.Mountains }; //BiomeGraph.FindNearest(worldmapSamples.A).ToArray();
             }
             else //this is a pure ocean chunk, its outside the generated map bounds
             {
@@ -300,9 +343,8 @@ namespace WorldGen
             float elevationSample = 0.0f;
             float moisutreSample = 0.0f;
             //handling the player moving outside the mapzone, i.e. into the infinite ocean
-            elevationSample = this.ElevationData[x0, z0];
-            moisutreSample = this.MoistureData[x0, z0];
-            
+            elevationSample =  Utils.MathUtils.Normalise(this.ElevationData[x0, z0], this.ElevationMinValue, this.ElevationMaxValue);
+            moisutreSample  =  Utils.MathUtils.Normalise( this.MoistureData[x0, z0], this.MoisutreMinValue, this.MoisutreMaxValue);
             Pair<float, float> samples = new Pair<float, float>(elevationSample, moisutreSample);
             return samples;
         }
@@ -314,7 +356,7 @@ namespace WorldGen
             int z0 = (MAP_SIZE / 2) + position.Z;
             if (x0 < 0 || x0 > ElevationData.GetLength(0) || z0 < 0 || z0 > ElevationData.GetLength(1))
             {
-                Debug.Log("Chunk is outside the map");
+                Debug.Log("Chunk is outside the map: " + position.X + "," + position.Z);
                 return false;
             }
             else

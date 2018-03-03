@@ -21,7 +21,7 @@ namespace TerrainGenerator
 
         private TerrainChunkSettings Settings { get; set; }
 
-        private NoiseProvider NoiseProvider { get; set; }
+       
 
         private TerrainChunkNeighborhood Neighborhood { get; set; }
 
@@ -30,6 +30,8 @@ namespace TerrainGenerator
         private ChunkTreeGenerator TreeAssets { get; set; }
 
         public float[,] Heightmap { get; set; }
+
+        public ChunkEdge EdgeType { get; set; }
 
         public List<BiomeType> Biomes { get; set; }
 
@@ -41,12 +43,12 @@ namespace TerrainGenerator
         public Perlin ChunkBlend { get; private set; }
         public GameObject ChunkFeature { get; private set; }
 
-        public TerrainChunk(TerrainChunkSettings settings, WorldGenerator worldGenerator, NoiseProvider noiseProvider, int x, int z)
+        public TerrainChunk(TerrainChunkSettings settings, WorldGenerator worldGenerator, ChunkEdge edgetype, int x, int z)
         {
             HeightmapThreadLockObject = new object();
             WorldGenerator = worldGenerator;
             Settings = settings;
-            NoiseProvider = noiseProvider;
+            EdgeType = edgetype;
 
             Biomes = new List<BiomeType>();
             Neighborhood = new TerrainChunkNeighborhood();
@@ -69,14 +71,15 @@ namespace TerrainGenerator
             int offsetX = this.Position.X * (Settings.HeightmapResolution);
             int offsetZ = this.Position.Z * (Settings.HeightmapResolution);
             Heightmap = new float[Settings.HeightmapResolution, Settings.HeightmapResolution];
+         
             lock (HeightmapThreadLockObject)
             {
                 ChunkBlend = WorldGenerator.ChunkBlendProvider as Perlin;
                 impactors = WorldGenerator.GetChunkBiomes(Position);
                 this.Biomes.AddRange(impactors);
+                Debug.Log("Chunk " + this.Position.X + ", " + this.Position.Z + ":: " + impactors[0] + ", " + impactors[1]);
                 var biomeA = GetBiomeNoiseProvider(impactors[0]);
                 var biomeB = GetBiomeNoiseProvider(impactors[1]);
-
                 var SelectModule = new Select(biomeA, biomeB, this.ChunkBlend);
                 SelectModule.FallOff = 0.125f;
                 SelectModule.SetBounds(0, 0.3);
@@ -91,6 +94,23 @@ namespace TerrainGenerator
                         var zCoordinate = Position.Z + (float)zRes / (Settings.HeightmapResolution - 1);
                         
                         heightmap[zRes, xRes] = (float)SelectModule.GetValue(xCoordinate, 0, zCoordinate) / 2f +0.5f;
+                    }
+                }
+
+                //if this chunk is a world edge, we need to  mask it to blend with the ocean
+                if(this.EdgeType != ChunkEdge.NotEdge)
+                {
+                    Debug.Log("[" + Position.X + "," + Position.Z + "] is a " + this.EdgeType + " edge so will mask.");
+                    //interpolation causes seams, we fix that here:
+                    
+                    float[,] mask = TerrainUtils.GetEdgeMask(this.EdgeType);
+                    for(int x = 0; x < TerrainChunkSettings.ChunkSize; x++)
+                    {
+                        for (int z = 0; z < TerrainChunkSettings.ChunkSize; z++)
+                        {
+                          heightmap[x, z] *= mask[x, z];
+                            
+                        }
                     }
                 }
 
@@ -114,6 +134,9 @@ namespace TerrainGenerator
                 case BiomeType.Ocean:
                     selectedModule = WorldGenerator.OceanProvider;
                     break;
+                case BiomeType.Beach:
+                    selectedModule = WorldGenerator.BeachProvider;
+                    break;
                 case BiomeType.Plains:
                     selectedModule = WorldGenerator.PlainsProvider;
                     break;
@@ -123,7 +146,6 @@ namespace TerrainGenerator
                 case BiomeType.Mountains:
                     selectedModule = WorldGenerator.MountainsProvider;
                     break;
-                
                 default:
                     selectedModule = WorldGenerator.OceanProvider;
                     break;
@@ -159,7 +181,12 @@ namespace TerrainGenerator
 
             Data.size = new Vector3(Settings.Length, Settings.Height, Settings.Length);
             var newTerrainGameObject = Terrain.CreateTerrainGameObject(Data);
-            newTerrainGameObject.transform.position = new Vector3(Position.X * Settings.Length, 0, Position.Z * Settings.Length);
+            newTerrainGameObject.name = "Chunk: [" + Position.X + ", " + Position.Z + "]";
+
+            //slightly shift edge chunks up, theyre off due to bilinear interpolation floating point errors
+            var yPos = (this.EdgeType != ChunkEdge.NotEdge) ? 0.15f : 0.0f;
+            newTerrainGameObject.transform.position = new Vector3(Position.X * Settings.Length, yPos, Position.Z * Settings.Length);
+            newTerrainGameObject.tag = "Terrain";
 
             Terrain = newTerrainGameObject.GetComponent<Terrain>();
             Terrain.heightmapPixelError = 8;
@@ -169,44 +196,82 @@ namespace TerrainGenerator
             Terrain.Flush();
 
             //Adding Trees to this chunk
-            AddTrees(newTerrainGameObject);
+            if(EdgeType == ChunkEdge.NotEdge)
+            {
+                AddTrees(newTerrainGameObject);
+            }
             //Add feature if nessecary
             AddFeature(newTerrainGameObject);
         }
 
         private void ApplyTextures(TerrainData terrainData)
         {
+            
             var flatSplat = new SplatPrototype();
             var steepSplat = new SplatPrototype();
+            var sandSplat = new SplatPrototype();
 
             flatSplat.texture = Settings.FlatTexture;
             steepSplat.texture = Settings.SteepTexture;
+            sandSplat.texture = Settings.SandTexture;
 
-            terrainData.splatPrototypes = new SplatPrototype[]
+            //TODO: Check biome to get textures to apply
+            // ocean: sands and bluerock
+            // mountains: grass and darkrock
+            // hills: grass and rock
+            if(EdgeType != ChunkEdge.NotEdge)
             {
-                flatSplat,
-                steepSplat
-            };
+                terrainData.splatPrototypes = new SplatPrototype[]
+                {
+                    flatSplat, //sand is majority on edge tiles
+                    steepSplat,
+                    sandSplat
+                };
+            }
+            else
+            {
+                terrainData.splatPrototypes = new SplatPrototype[]
+                {
+                    flatSplat,
+                    steepSplat,
+                    sandSplat
+                };
+
+            }
 
             terrainData.RefreshPrototypes();
 
-            var splatMap = new float[terrainData.alphamapResolution, terrainData.alphamapResolution, 2];
+            var splatMap = new float[terrainData.alphamapResolution, terrainData.alphamapResolution, 3];
 
             for (var zRes = 0; zRes < terrainData.alphamapHeight; zRes++)
             {
                 for (var xRes = 0; xRes < terrainData.alphamapWidth; xRes++)
                 {
+                    float height = terrainData.GetHeight(xRes, zRes);
                     var normalizedX = (float)xRes / (terrainData.alphamapWidth - 1);
                     var normalizedZ = (float)zRes / (terrainData.alphamapHeight - 1);
 
                     var steepness = terrainData.GetSteepness(normalizedX, normalizedZ);
                     var steepnessNormalized = Mathf.Clamp(steepness / 1.5f, 0, 1f);
 
+                    //apply rock and grass textures
                     splatMap[zRes, xRes, 0] = 1f - steepnessNormalized;
                     splatMap[zRes, xRes, 1] = steepnessNormalized;
+
+                    if(height <= 0.28f) //add sand below edge
+                    {
+                        if(height >= 0.27f)
+                        {
+                            splatMap[zRes, xRes, 2] = Mathf.Clamp01(height / 2f);
+                        }
+                        else
+                        {
+                            splatMap[zRes, xRes, 2] = 1.0f;
+                        }
+                        
+                    }
                 }
             }
-
             terrainData.SetAlphamaps(0, 0, splatMap);
         }
 
@@ -292,7 +357,10 @@ namespace TerrainGenerator
                 var feature = ChunkFeature.GetComponent<ChunkFeatureComponent>();
                 feature.Destroy();
             }
-            TreeAssets.DestroyAllTrees();
+            if(TreeAssets != null)
+            {
+                TreeAssets.DestroyAllTrees();
+            }
             if (Terrain != null)
             {
                 GameObject.Destroy(Terrain.gameObject);
@@ -359,76 +427,77 @@ namespace TerrainGenerator
         #endregion
 
         #region Edge Blending (Deprecated)
-        //public float[] GetChunkEdge(EdgeDirection direction)
-        //{
-        //    int max = Settings.HeightmapResolution;
-        //    float[] edge = new float[max];
 
-        //    switch (direction)
-        //    {
-        //        case EdgeDirection.NORTH:
-        //            for(int z = 0; z < max; z++)
-        //            {
-        //                edge[z] = this.Heightmap[0, z];
-        //            }
-        //            break;
-        //        case EdgeDirection.SOUTH:
-        //            for (int z = 0; z < max; z++)
-        //            {
-        //                edge[z] = this.Heightmap[max-1, z];
-        //            }
-        //            break;
-        //        case EdgeDirection.EAST:
-        //            for (int x = 0; x < max; x++)
-        //            {
-        //                edge[x] = this.Heightmap[x, max-1];
-        //            }
-        //            break;
-        //        case EdgeDirection.WEST:
-        //            for (int x = 0; x < max; x++)
-        //            {
-        //                edge[x] = this.Heightmap[x, 0];
-        //            }
-        //            break;
-        //    }
+        public float[] GetChunkEdge(EdgeDirection direction)
+        {
+            int max = Settings.HeightmapResolution;
+            float[] edge = new float[max];
 
-        //    return edge;
-        //}
+            switch (direction)
+            {
+                case EdgeDirection.NORTH:
+                    for (int z = 0; z < max; z++)
+                    {
+                        edge[z] = this.Heightmap[0, z];
+                    }
+                    break;
+                case EdgeDirection.SOUTH:
+                    for (int z = 0; z < max; z++)
+                    {
+                        edge[z] = this.Heightmap[max - 1, z];
+                    }
+                    break;
+                case EdgeDirection.EAST:
+                    for (int x = 0; x < max; x++)
+                    {
+                        edge[x] = this.Heightmap[x, max - 1];
+                    }
+                    break;
+                case EdgeDirection.WEST:
+                    for (int x = 0; x < max; x++)
+                    {
+                        edge[x] = this.Heightmap[x, 0];
+                    }
+                    break;
+            }
 
-        //public void SetChunkEdge(EdgeDirection direction, float[] newvalues)
-        //{
-        //    int max = Settings.HeightmapResolution;
-        //    float[] edge = new float[max];
+            return edge;
+        }
 
-        //    switch (direction)
-        //    {
-        //        case EdgeDirection.NORTH:
-        //            for (int z = 0; z < max; z++)
-        //            {
-        //                this.Heightmap[0, z] = newvalues[z];
-        //            }
-        //            break;
-        //        case EdgeDirection.SOUTH:
-        //            for (int z = 0; z < max; z++)
-        //            {
-        //                this.Heightmap[max-1, z] = newvalues[z];
-        //            }
-        //            break;
-        //        case EdgeDirection.EAST:
-        //            for (int x = 0; x < max; x++)
-        //            {
-        //                this.Heightmap[x, max-1] = newvalues[x];
-        //            }
-        //            break;
-        //        case EdgeDirection.WEST:
-        //            for (int x = 0; x < max; x++)
-        //            {
-        //                this.Heightmap[x, 0] = newvalues[x];
-        //            }
-        //            break;
-        //    }
+        public void SetChunkEdge(EdgeDirection direction, float[] newvalues)
+        {
+            int max = Settings.HeightmapResolution;
+            float[] edge = new float[max];
 
-        //}
+            switch (direction)
+            {
+                case EdgeDirection.NORTH:
+                    for (int z = 0; z < max; z++)
+                    {
+                        this.Heightmap[0, z] = newvalues[z];
+                    }
+                    break;
+                case EdgeDirection.SOUTH:
+                    for (int z = 0; z < max; z++)
+                    {
+                        this.Heightmap[max - 1, z] = newvalues[z];
+                    }
+                    break;
+                case EdgeDirection.EAST:
+                    for (int x = 0; x < max; x++)
+                    {
+                        this.Heightmap[x, max - 1] = newvalues[x];
+                    }
+                    break;
+                case EdgeDirection.WEST:
+                    for (int x = 0; x < max; x++)
+                    {
+                        this.Heightmap[x, 0] = newvalues[x];
+                    }
+                    break;
+            }
+
+        }
 
         #endregion
     }

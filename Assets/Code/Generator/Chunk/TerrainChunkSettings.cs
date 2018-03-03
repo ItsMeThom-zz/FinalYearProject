@@ -2,6 +2,10 @@
 
 namespace TerrainGenerator
 {
+    public enum ChunkEdge { TL, L, BL, B, BR, R, TR, T,
+        NotEdge
+    }
+
     public class TerrainChunkSettings
     {
         public static int ChunkSize = 129;
@@ -18,13 +22,15 @@ namespace TerrainGenerator
 
         public Texture2D SteepTexture { get; private set; }
 
+        public Texture2D SandTexture { get; private set; }
+
         public Material TerrainMaterial { get; private set; }
 
         public float Scale = 26.543f;
 
         public int EdgeFalloff = 20; //falloff distance for blending edge seams
 
-        public TerrainChunkSettings(int heightmapResolution, int alphamapResolution, int length, int height, Texture2D flatTexture, Texture2D steepTexture, Material terrainMaterial)
+        public TerrainChunkSettings(int heightmapResolution, int alphamapResolution, int length, int height, Texture2D flatTexture, Texture2D steepTexture, Texture2D sandTexture, Material terrainMaterial)
         {
             HeightmapResolution = heightmapResolution;
             AlphamapResolution = alphamapResolution;
@@ -32,6 +38,7 @@ namespace TerrainGenerator
             Height = height;
             FlatTexture = flatTexture;
             SteepTexture = steepTexture;
+            SandTexture = sandTexture;
             TerrainMaterial = terrainMaterial;
         }
     }

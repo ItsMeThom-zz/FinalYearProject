@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace KNN
+namespace Assets.Code.Generator.World
 {
-    public enum BiomeType { Ocean, Plains, Hills, Mountains,
-        Beach
+    public class TerrainTextureSettings
+    {
     }
 }
