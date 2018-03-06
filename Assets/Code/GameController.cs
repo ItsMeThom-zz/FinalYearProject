@@ -64,13 +64,13 @@ public class GameController : MonoBehaviour
     private void RenderWorldMap()
     {
         
-        var worldgen = GameObject.FindObjectOfType<TerrainChunkGenerator>().WorldGenerator;
-        Texture2D tex = CreateTexture(worldgen.ElevationData);
-        var mapcam = GameObject.Find("WorldMap");
-        var textureRender = mapcam.GetComponent<Renderer>().material.mainTexture = tex;
+        //var worldgen = GameObject.FindObjectOfType<TerrainChunkGenerator>().WorldGenerator;
+        //Texture2D tex = CreateTexture(worldgen.ElevationData);
+        //var mapcam = GameObject.Find("WorldMap");
+        //var textureRender = mapcam.GetComponent<Renderer>().material.mainTexture = tex;
 
-        MapRenderer.sharedMaterial.mainTexture = textureRender;
-        MapRenderer.transform.localScale = new Vector3(textureRender.width, 1, textureRender.height);
+        //MapRenderer.sharedMaterial.mainTexture = textureRender;
+        //MapRenderer.transform.localScale = new Vector3(textureRender.width, 1, textureRender.height);
     }
 
     private Texture2D CreateTexture(float[,] noisemap)

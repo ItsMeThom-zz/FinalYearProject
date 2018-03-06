@@ -1,0 +1,198 @@
+﻿using LibNoise.Generator;
+using System.Collections;
+using System.Collections.Generic;
+using TerrainGenerator;
+using UnityEngine;
+using Utils;
+
+public class ChunkTreeGenerator : MonoBehaviour {
+
+    public int ChunkSize = 129;
+
+    public Vector2i ChunkPosition;
+
+    private PoissonDiscSampler sampler;
+    public Terrain ChunkTerrain;
+    public float[,] ChunkHeightmap;
+
+    private Perlin sparseMask;
+    private float SeaLevel = 0.4f;
+
+    float[,] treePoints;
+
+    public List<GameObject> TreesList;
+
+    // Use this for initialization
+    private void Awake()
+    {
+        this.sampler = new PoissonDiscSampler();
+
+        this.sparseMask = new Perlin()
+        {
+            OctaveCount = 8,
+            Frequency = 1.7,
+            Persistence = 0.6
+        };
+
+        TreesList = new List<GameObject>();
+    }
+
+
+    public void GenerateTrees()
+    {
+        //Debug.Log("CHUNK SIZE: " + ChunkTerrain.terrainData.size.x);
+        var points = sampler.GeneratePoints((int)ChunkTerrain.terrainData.size.x);
+        for(var t = 0; t < points.Count; t++)
+        {
+            if(points[t] != null)
+            {
+                Vector3 pos = (Vector3)points[t];
+                var chunkheight = ChunkHeightmap[(int)pos.x, (int)pos.z];
+                if ( (sparseMask.GetValue(pos.x, 0, pos.z) < 0.4) && ( chunkheight > SeaLevel))
+                {
+                    //set the offset
+                    var offsetPosition = new Vector3(
+                        (ChunkPosition.X * ChunkTerrain.terrainData.size.x),
+                        ChunkTerrain.SampleHeight(pos),
+                        (ChunkPosition.Z * ChunkTerrain.terrainData.size.z)
+                        );
+
+                    //random horizontal rotation
+                    var randomRotation = Quaternion.Euler(0, UnityEngine.Random.Range(0, 360), 0);
+                    //set random scale adjustments
+                    var scalemod = UnityEngine.Random.Range(-0.3f, 0.3f);
+                    Vector3 randomSize = new Vector3(scalemod, scalemod, scalemod);
+
+                    //TODO: Get a tree from Generator now
+                    var spawnposition = pos + offsetPosition;
+                    if (IsValidPosition(ref spawnposition))
+                    {
+                        GameObject tree = (GameObject)Resources.Load("BTree");
+                        
+                        var spawned = Instantiate(tree, spawnposition, randomRotation);
+                        spawned.name = "Tree (Valid)";
+                        //spawned.transform.position = spawnposition;
+                        spawned.transform.localScale = spawned.transform.localScale + randomSize;
+                        spawned.transform.parent = this.transform;
+                        TreesList.Add(spawned);
+                    }
+
+
+                }
+            }
+        }
+
+        //Debug.Log("This chunk: " + ChunkPosition.X + ", " + ChunkPosition.Z + "has " + TreesList.Count + " trees");
+    }
+
+    private bool IsValidPosition(ref Vector3 position)
+    {
+        #region Summary of Code (For report)
+        /*
+         Simple Summary of raycast steps for tree placement
+         Raycast down:
+            If hit:
+                if terrain:
+                    if > sealevel:
+                        valid
+                        down = true
+                    else:
+                        not valid
+         if not down:
+            raycast up:
+                if hit:
+                    if terrain:
+                        if > sealevel
+                            valid
+                        else: not valid
+                    else:
+                        not valid
+         */
+        #endregion
+        bool placeable = true;
+        bool downHandled = false;
+        RaycastHit hit = new RaycastHit();
+        if (Physics.Raycast(position, Vector3.down, out hit, 1000))
+        {
+            
+            if (hit.collider.gameObject.tag == "Terrain")
+            {
+                Debug.DrawLine(position, hit.point, Color.red, 500f);
+                if (hit.point.y < 10.5f) //below global sealevel
+                {
+                    //Debug.DrawLine(position, hit.point, Color.blue, 500f);
+                    placeable = false;
+                }
+                else
+                {
+                    //Debug.DrawLine(position, hit.point, Color.red, 500f);
+                    position = new Vector3(position.x, hit.point.y - 0.08f, position.z);
+                }
+                downHandled = true;
+            }
+            //Debug.DrawLine(position, hit.point, Color.yellow, 500f);
+        }
+        if (!downHandled)
+        {
+            if (Physics.Raycast(position, Vector3.up, out hit, 1000))
+            {
+                //Debug.DrawLine(position, hit.point, Color.green, 500f);
+
+                if (hit.collider.gameObject.tag == "Terrain")
+                {
+
+                    if (hit.point.y < 10.5f) //below global sealevel
+                    {
+                        //Debug.Log("I am below sealevel");
+                        //Debug.DrawLine(position, hit.point, Color.blue, 500f);
+                        placeable = false;
+                    }
+                    else
+                    {
+                        //Debug.DrawLine(position, hit.point, Color.green, 500f);
+                        position = new Vector3(position.x, hit.point.y - 0.08f, position.z);
+                    }
+
+                }
+                //Debug.DrawLine(position, hit.point, Color.white, 500f);
+            }
+            else
+            {
+                //Debug.Log("Hit nothing! FFS");
+                placeable = false;
+            }
+        }
+        
+
+        return placeable;
+    }
+
+    //destroy a single tree
+    public void DestroyTree(GameObject tree)
+    {
+        if (TreesList.Contains(tree))
+        {
+            TreesList.Remove(tree);
+            Destroy(tree);
+            Debug.Log("Tree Removed");
+        }
+    }
+
+    //Desttroy a range of trees
+    public void DestroyTreeRange(List<GameObject> treelist)
+    {
+        foreach(var tree in treelist)
+        {
+            DestroyTree(tree);
+        }
+    }
+
+    //destroy all trees
+    public void DestroyAllTrees()
+    {
+        foreach(var tree in TreesList)
+        {
+            GameObject.Destroy(tree);
+        }
+    }
+}

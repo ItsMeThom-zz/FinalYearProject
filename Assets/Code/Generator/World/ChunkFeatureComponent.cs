@@ -27,6 +27,7 @@ namespace WorldGen
         {
             FeatureAssets = new List<GameObject>();
             ChunkTerrain = this.transform.parent.GetComponent<Terrain>();
+            
         }
 
 
@@ -70,11 +71,30 @@ namespace WorldGen
             var pos = spawntower.transform.position;
             pos = new Vector3(pos.x, (pos.y + distanceToGround), pos.z);
             spawntower.transform.position = pos;
+            spawntower.transform.SetParent(this.transform);
+            RemoveOverlappingAssets();
         }
 
         public void Destroy()
         {
             Generator.DestroyAssets();
+        }
+
+        public void RemoveOverlappingAssets()
+        {
+            //remove trees
+            var treecomponent = this.transform.parent.GetComponentInChildren<ChunkTreeGenerator>();
+            var FeatureCollider = Generator.FeatureAssets[0].GetComponentInChildren<Renderer>(); //get dungeon collider
+            List<GameObject> treesForRemoval = new List<GameObject>();
+            foreach (var tree in treecomponent.TreesList)
+            {
+                var collider = tree.GetComponentInChildren<Renderer>();
+                if (FeatureCollider.bounds.Intersects(collider.bounds))
+                {
+                    treesForRemoval.Add(tree);
+                }
+            }
+            treecomponent.DestroyTreeRange(treesForRemoval);
         }
     }
 }
