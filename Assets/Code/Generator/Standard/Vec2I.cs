@@ -1,4 +1,4 @@
-﻿namespace TerrainGenerator
+﻿namespace Utils
 {
     public class Vector2i
     {
