@@ -19,10 +19,11 @@ namespace GenerativeGrammar
          it pops an item from the queue and rewrite it
          it does this until the queue is empty
          */
-        Queue<Atom> AtomQueue;
+        public Queue<Atom> AtomQueue;
 
         private void Awake()
         {
+            //Get all inital parent level atoms
             AtomQueue = new Queue<Atom>();
             Atom[] childAtoms = GetComponentsInChildren<Atom>();
             if( (childAtoms != null) && (childAtoms.Count() > 0))
@@ -51,31 +52,36 @@ namespace GenerativeGrammar
                 Debug.Log(AtomQueue.Count + " remaining rewrites");
                 Atom atom = AtomQueue.Dequeue();
                 atom.Rewrite();
-            }
-           
-        }
-        
-        public void LoadAtomPrefab(Transform replaceTransform, string path)
-        {
-            Debug.Log("GE loading prefab: grammar/" + path);
-            GameObject newAtom = (GameObject)Resources.Load("grammar/" + path);
-            
-            GameObject spawnedObject = Instantiate( newAtom, 
-                                                    replaceTransform.TransformPoint(Vector3.zero), 
-                                                    replaceTransform.rotation, 
-                                                    gameObject.transform.parent);
-            Atom spawnedAtom = spawnedObject.GetComponentInChildren<Atom>();
-            spawnedAtom.transform.parent = replaceTransform.parent;
-            if(spawnedAtom.SubAtoms != null)
-            {
-                foreach (var subatom in spawnedAtom.SubAtoms)
+                var childAtoms = atom.SubAtoms;
+                Debug.Log("Rewritten Atom has " + childAtoms.Count + "atoms");
+                foreach(var subatom in childAtoms)
                 {
-                    subatom.GrammarEngine = this;
                     AtomQueue.Enqueue(subatom);
                 }
             }
-            Destroy(replaceTransform.gameObject);
+           
         }
 
+        public GameObject RewriteSpecificAtom(GameObject starterObject)
+        {
+            var objectatom = starterObject.GetComponent<Atom>();
+            if(objectatom != null)
+            {
+                AtomQueue.Clear();
+                AtomQueue.Enqueue(objectatom);
+                while(AtomQueue.Count > 0)
+                {
+                    Atom atom = AtomQueue.Dequeue();
+                    atom.Rewrite();
+                    var childAtoms = atom.SubAtoms;
+                    
+                    foreach (var subatom in childAtoms)
+                    {
+                        AtomQueue.Enqueue(subatom);
+                    }
+                }
+            }
+            return starterObject;
+        }
     }
 }

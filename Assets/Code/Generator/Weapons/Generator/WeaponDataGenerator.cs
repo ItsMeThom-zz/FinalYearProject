@@ -22,45 +22,37 @@ namespace Weapons
             return _instance;
         }
 
-        private Dictionary<WeaponType, Dictionary<WeaponQuality, Vector2i>> QualityDMGRange;  //range in which damage for this quality lies
-        private Dictionary<WeaponQuality, int> QualityMaxStep;                                //maximum range step between chosen vals
-        private Dictionary<WeaponType, float> TypeSpeedVariant;
+        
+        private int[,] QualityMaxStep; //maximum range step between chosen vals
+        private float[,] TypeSpeedVariant;
+
+        private Vector2i[,] DMGRange;
 
         private WeaponDataGenerator()
         {
-            QualityDMGRange = new Dictionary<WeaponType, Dictionary<WeaponQuality, Vector2i>>() {
-                {WeaponType.Sword, new Dictionary<WeaponQuality, Vector2i>(){
-                        { WeaponQuality.Common,    new Vector2i(1,5)  },
-                        { WeaponQuality.Rare,      new Vector2i(4,10) },
-                        { WeaponQuality.Legendary, new Vector2i(7,20) }
-                    }
-                },
-                {WeaponType.Axe, new Dictionary<WeaponQuality, Vector2i>(){
-                        { WeaponQuality.Common,    new Vector2i(1,5)  },
-                        { WeaponQuality.Rare,      new Vector2i(4,10) },
-                        { WeaponQuality.Legendary, new Vector2i(7,20) }
-                    }
-                },
-                {WeaponType.Hammer, new Dictionary<WeaponQuality, Vector2i>(){
-                        { WeaponQuality.Common,    new Vector2i(1,5)  },
-                        { WeaponQuality.Rare,      new Vector2i(4,10) },
-                        { WeaponQuality.Legendary, new Vector2i(7,20) }
-                    }
-                },
+            //sword
+            //axe    (fast)
+            //hammer (slow)
+
+            DMGRange = new Vector2i[,]
+            {
+                {new Vector2i(1,5), new Vector2i(4,10), new Vector2i(7,20)},
+                {new Vector2i(1,5), new Vector2i(4,10), new Vector2i(7,20)},
+                {new Vector2i(1,5), new Vector2i(4,10), new Vector2i(7,20)},
             };
 
-            QualityMaxStep = new Dictionary<WeaponQuality, int>()
-            {
-                { WeaponQuality.Common,    3 },
-                { WeaponQuality.Rare,      4 },
-                { WeaponQuality.Legendary, 5 }
+            QualityMaxStep = new int[,]
+             {
+                {2, 3, 4},
+                {3, 3, 4},
+                {3, 3, 4}
             };
 
-            TypeSpeedVariant = new Dictionary<WeaponType, float>()
+            TypeSpeedVariant = new float[,]
             {
-                {WeaponType.Axe, 0.5f },
-                {WeaponType.Sword, 0.3f },
-                {WeaponType.Hammer, -0.5f },
+                {0.3f, 0.2f, 0.4f},
+                {0.2f, 0.4f, 0.8f },
+                {-0.5f, 0.2f, -0.1f}
             };
 
 
@@ -70,17 +62,20 @@ namespace Weapons
         public WeaponData GenerateWeaponData(WeaponQuality quality, WeaponType type)
         {
             //Generate the range of damage this weapon type can do
-            Vector2i damageRange = QualityDMGRange[type][quality];
-            int dmgLow = UnityEngine.Random.Range((int)damageRange.X, (int)damageRange.Z+1);
+            Vector2i damageRange = DMGRange[(int)type, (int)quality];
+            int dmgLow = UnityEngine.Random.Range((int)damageRange.X, (int)damageRange.Z);
             int dmgHi = dmgLow;
             if(dmgHi != damageRange.Z)
             {
-                dmgHi = UnityEngine.Random.Range(dmgLow, dmgLow + 1 + QualityMaxStep[quality]);
+                dmgHi = UnityEngine.Random.Range(dmgLow, dmgLow + 1 + QualityMaxStep[(int)type, (int)quality]);
             }
 
-            float speedVariantMax = TypeSpeedVariant[type];
-            float speedVariant = UnityEngine.Random.Range(0, speedVariantMax);
-
+            //detmine the speed of the weapon (capped to 0.05 steps)
+            float speedVariantMax = TypeSpeedVariant[(int)type, (int)quality];
+            float speedVariantSelected = UnityEngine.Random.Range(0, speedVariantMax);
+            float stepSize = 0.05f;
+            int numSteps = (int)Math.Floor(speedVariantSelected / stepSize);
+            float speedVariant = numSteps * stepSize;
             WeaponData newWeaponData = new WeaponData();
             newWeaponData.Quality = quality;
             newWeaponData.Type = type;

@@ -54,22 +54,7 @@ namespace GenerativeGrammar
 
             }
             SubAtoms = new List<Atom>();
-            Atom[] subatoms = this.gameObject.GetComponentsInChildren<Atom>();
-            Debug.Log("This atom [" + gameObject.name + "]" + " has " + subatoms.GetLength(0) + " subatoms");
-            //the spawned item has subatoms we will need to resolve
-            if (subatoms != null)
-            {
-                //We need to ignore this component in the list of returned components
-                // as GetComponentsInChildren returns the parent component too! (wtf)
-                for(int i = 0; i < subatoms.GetLength(0); i++)
-                {
-                    if(!subatoms[i].GetHashCode().Equals(this.GetHashCode()))
-                    {
-                        SubAtoms.Add(subatoms[i]);
-                    }
-                }
-                
-            }
+            GetSubAtoms();
             
         }
 
@@ -99,7 +84,19 @@ namespace GenerativeGrammar
                 }
                 if(selectedRule.Type != null)
                 {
-                    GameObject newAtom = Instantiate(selectedRule.Type, this.transform.position, this.transform.rotation, this.transform.parent);
+                    //Create a new object at the atom components position
+                    GameObject newAtom = Instantiate(selectedRule.Type, this.transform.position, this.transform.rotation);
+                    
+                    newAtom.transform.SetPositionAndRotation(this.transform.parent.position, Quaternion.identity);
+                    newAtom.transform.SetParent(this.transform.parent, true);
+                    var subatoms = newAtom.GetComponentsInChildren<Atom>();
+                    foreach(var sb in subatoms)
+                    {
+                        Debug.Log("SB");
+                        this.GrammarEngine.AtomQueue.Enqueue(sb);
+                    }
+                    //Destroy(this.gameObject);
+                    
                 }
                 else
                 {
@@ -131,6 +128,26 @@ namespace GenerativeGrammar
                 totalWeight += rule.Weight;
             }
             return totalWeight;
+        }
+
+        private void GetSubAtoms()
+        {
+            Atom[] subatoms = this.gameObject.GetComponentsInChildren<Atom>();
+            Debug.Log("This atom [" + gameObject.name + "]" + " has " + subatoms.GetLength(0) + " subatoms");
+            //the spawned item has subatoms we will need to resolve
+            if (subatoms != null)
+            {
+                //We need to ignore this component in the list of returned components
+                // as GetComponentsInChildren returns the parent component too! (wtf)
+                for (int i = 0; i < subatoms.GetLength(0); i++)
+                {
+                    if (!subatoms[i].GetHashCode().Equals(this.GetHashCode()))
+                    {
+                        SubAtoms.Add(subatoms[i]);
+                    }
+                }
+
+            }
         }
     }
 
