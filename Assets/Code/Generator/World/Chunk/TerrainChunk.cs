@@ -15,19 +15,17 @@ namespace TerrainGenerator
     {
         public Vector2i Position { get; private set; }
 
-        private Terrain Terrain { get; set; }
+        public Terrain Terrain { get; set; }
 
         private TerrainData Data { get; set; }
 
         private TerrainChunkSettings Settings { get; set; }
 
-       
 
         private TerrainChunkNeighborhood Neighborhood { get; set; }
 
         private WorldGenerator WorldGenerator { get; set; }
 
-        private ChunkTreeGenerator TreeAssets { get; set; }
 
         public float[,] Heightmap { get; set; }
 
@@ -41,7 +39,11 @@ namespace TerrainGenerator
         public Blend BlendModule { get; private set; }
         public bool HeightmapReady { get; private set; }
         public Perlin ChunkBlend { get; private set; }
-        public GameObject ChunkFeature { get; private set; }
+
+
+        public ChunkFeatureComponent FeatureComponent { get; private set; }
+        public ChunkRockGenerator    RocksComponent   { get; private set; }
+        public ChunkTreeGenerator    TreesComponent   { get; private set; }
 
         public TerrainChunk(TerrainChunkSettings settings, WorldGenerator worldGenerator, ChunkEdge edgetype, int x, int z)
         {
@@ -77,7 +79,7 @@ namespace TerrainGenerator
                 ChunkBlend = WorldGenerator.ChunkBlendProvider as Perlin;
                 impactors = WorldGenerator.GetChunkBiomes(Position);
                 this.Biomes.AddRange(impactors);
-                Debug.Log("Chunk " + this.Position.X + ", " + this.Position.Z + ":: " + impactors[0] + ", " + impactors[1]);
+                //Debug.Log("Chunk " + this.Position.X + ", " + this.Position.Z + ":: " + impactors[0] + ", " + impactors[1]);
                 var biomeA = GetBiomeNoiseProvider(impactors[0]);
                 var biomeB = GetBiomeNoiseProvider(impactors[1]);
                 var SelectModule = new Select(biomeA, biomeB, this.ChunkBlend);
@@ -100,7 +102,7 @@ namespace TerrainGenerator
                 //if this chunk is a world edge, we need to  mask it to blend with the ocean
                 if(this.EdgeType != ChunkEdge.NotEdge)
                 {
-                    Debug.Log("[" + Position.X + "," + Position.Z + "] is a " + this.EdgeType + " edge so will mask.");
+                    //Debug.Log("[" + Position.X + "," + Position.Z + "] is a " + this.EdgeType + " edge so will mask.");
                     //interpolation causes seams, we fix that here:
                     
                     float[,] mask = TerrainUtils.GetEdgeMask(this.EdgeType);
@@ -170,21 +172,30 @@ namespace TerrainGenerator
 
         #region Main terrain generation
 
+
+        //NOT Threaded (Can it be?)
         public void CreateTerrain()
         {
+            GameController GameController = GameController.GetSharedInstance();
+            int randVal = GameController.BaseSeed * Mathf.Abs(Position.X) * Mathf.Abs(Position.Z);
+            Random.InitState(randVal);
+            var x = Random.value + Random.value + Random.value;
             //Debug.Log("Chunk["+Position.X+","+Position.Z+"].CreateTerrain()");
             Data = new TerrainData();
             Data.heightmapResolution = Settings.HeightmapResolution;
             Data.alphamapResolution = Settings.AlphamapResolution;
             Data.SetHeights(0, 0, Heightmap);
             ApplyTextures(Data);
+            
 
+            // GRASS ADDING
             Data.size = new Vector3(Settings.Length, Settings.Height, Settings.Length);
-            var newTerrainGameObject = Terrain.CreateTerrainGameObject(Data);
+            AddDetailGrass(Data);
+            GameObject newTerrainGameObject = Terrain.CreateTerrainGameObject(Data);
             newTerrainGameObject.name = "Chunk: [" + Position.X + ", " + Position.Z + "]";
 
             //slightly shift edge chunks up, theyre off due to bilinear interpolation floating point errors
-            var yPos = (this.EdgeType != ChunkEdge.NotEdge) ? 0.15f : 0.0f;
+            float yPos = (this.EdgeType != ChunkEdge.NotEdge) ? 0.15f : 0.0f;
             newTerrainGameObject.transform.position = new Vector3(Position.X * Settings.Length, yPos, Position.Z * Settings.Length);
             newTerrainGameObject.tag = "Terrain";
 
@@ -194,12 +205,18 @@ namespace TerrainGenerator
             Terrain.materialTemplate = Settings.TerrainMaterial;
             Terrain.reflectionProbeUsage = UnityEngine.Rendering.ReflectionProbeUsage.Off;
             Terrain.Flush();
+           
 
+            
             //Adding Trees to this chunk
-            if(EdgeType == ChunkEdge.NotEdge)
+            if (EdgeType == ChunkEdge.NotEdge)
             {
-                AddTrees(newTerrainGameObject);
+                AddTrees();
+               
             }
+           
+            AddRocks();
+            
             //Add feature if nessecary
             AddFeature(newTerrainGameObject);
         }
@@ -219,6 +236,7 @@ namespace TerrainGenerator
             // ocean: sands and bluerock
             // mountains: grass and darkrock
             // hills: grass and rock
+            // Eat some fucking food
             if(EdgeType != ChunkEdge.NotEdge)
             {
                 terrainData.splatPrototypes = new SplatPrototype[]
@@ -275,34 +293,109 @@ namespace TerrainGenerator
             terrainData.SetAlphamaps(0, 0, splatMap);
         }
 
-        private void AddTrees(GameObject terrain)
+        private void AddTrees()
         {
-            GameObject ChunkTrees = new GameObject();
-            ChunkTrees.name = "TreesAssets";
-            ChunkTrees.transform.parent = terrain.transform;
-            TreeAssets = ChunkTrees.AddComponent<ChunkTreeGenerator>();
-            
-            TreeAssets.ChunkHeightmap = Heightmap;
-            TreeAssets.ChunkTerrain = Terrain;
-            TreeAssets.ChunkPosition = Position;
-            TreeAssets.ChunkSize = Settings.HeightmapResolution;
-            TreeAssets.GenerateTrees();
+            // Add a child object to the chunk to store trees in.
+            // And to hold the ChunkTreesGenerator component
+            GameObject TreeHolderObj = new GameObject();
+            TreeHolderObj.name = "TreesAssets";
+            TreeHolderObj.transform.parent = this.Terrain.transform;
+            // Add reference to the ChunkTreeGenerator component to this terrainchunk
+            // so other components can access it easily
+            TreesComponent = TreeHolderObj.AddComponent<ChunkTreeGenerator>();
+            TreesComponent.ParentChunk = this;
+            TreesComponent.Generate();
+        }
+
+        private void AddRocks()
+        {
+            //Add rocks to this chunk
+            GameObject RockHolderObj = new GameObject();
+            RockHolderObj.name = "RockAssets";
+            RockHolderObj.transform.parent = Terrain.transform;
+            RocksComponent = RockHolderObj.AddComponent<ChunkRockGenerator>();
+            RocksComponent.ParentChunk = this;
+            RocksComponent.Generate();
         }
 
         private void AddFeature(GameObject terrain)
         {
+            //Adds dungeon feature to chunk
             if (WorldGenerator.IsFeatureChunk(this.Position))
             {
                 FeatureType type = WorldGenerator.GetChunkFeature(this.Position);
-                this.ChunkFeature = new GameObject();
-                ChunkFeature.name = "DungeonAssets";
-                ChunkFeature.transform.parent = terrain.transform;
-                var component = ChunkFeature.AddComponent<ChunkFeatureComponent>();
-                component.ChunkCoords = this.Position;
-                component.SetFeature(type, 100);
-                component.Generate();
+                GameObject FeatureHolderObj = new GameObject();
+                FeatureHolderObj.name = "FeatureAssets";
+                FeatureHolderObj.transform.parent = Terrain.transform;
+                FeatureComponent = FeatureHolderObj.AddComponent<ChunkFeatureComponent>();
+                FeatureComponent.ParentChunk = this;
+                FeatureComponent.SetFeature(type, UnityEngine.Random.Range(-10000, 10000));
+                FeatureComponent.Generate();
             }
         }
+
+        private void AddDetailGrass(TerrainData terrainData)
+        {
+            
+            Texture2D grasstex = (Texture2D)Resources.Load("Textures/detailgrass");
+            if(grasstex == null) { Debug.Log("NULL GRASS TEXTURE"); }
+            //undocumented feature: Set the value of the detail prototype array directly
+            DetailPrototype[] grassdetail = new DetailPrototype[1];
+            terrainData.SetDetailResolution(258, 8);
+            terrainData.wavingGrassTint = new Color(128.0f / 255, 128.0f / 255, 128.0f / 255); //remove the fucking tint!
+            grassdetail[0] = new DetailPrototype();
+            grassdetail[0].prototypeTexture = grasstex;
+            grassdetail[0].renderMode = DetailRenderMode.GrassBillboard;
+            grassdetail[0].minWidth = 1.0f;
+            grassdetail[0].maxWidth = 2.0f;
+            grassdetail[0].minHeight = 0.8f;
+            grassdetail[0].maxHeight = 1.0f;
+            grassdetail[0].noiseSpread = 0.1f;
+            grassdetail[0].healthyColor = new Color(177.0f / 255, 218.0f / 255, 160.0f / 255);
+            grassdetail[0].dryColor = new Color(148.0f / 255, 191.0f / 255, 142.0f / 255);
+           
+            terrainData.detailPrototypes = grassdetail;
+            //Debug.Log("NAME:" + terrainData.detailPrototypes[1].prototypeTexture.name);
+            float detailStrength = 0.3f; //A fair value to make the grass thick and luscious
+
+            int myTextureLayer = 0; //Assumed to be the first  texture layer - this is the grass texture from which we wish to sprout grass
+            int myDetailLayer = 0; //Assumed to be the first detail layer - this is the grass we wish to auto-populate
+
+            // get the alhpa maps - i.e. all the ground texture layers
+            float[,,] alphaMapData = terrainData.GetAlphamaps(0, 0, terrainData.alphamapWidth, terrainData.alphamapHeight);
+            //get the detail map for the grass layer we're after
+            int[,] map = new int[258, 258];//terrainData.GetDetailLayer(0, 0, terrainData.detailWidth, terrainData.detailHeight, myDetailLayer);
+            
+            //now copy-paste the alpha map onto the detail map, pixel by pixel
+            //Debug.Log("VALS");
+            //Debug.Log(terrainData.alphamapWidth);
+            //Debug.Log(terrainData.alphamapHeight);
+            //Debug.Log(terrainData.alphamapResolution);
+            for (int x = 0; x < terrainData.alphamapWidth; x++)
+            {
+                for (int y = 0; y < terrainData.alphamapHeight; y++)
+                {
+                    //Check the Detail Resolution and the Control Texture Resolution in the terrain settings.
+                    //By default the detail resolution is twice the alpha resolution! So every detail co-ordinate is going to have to affect a 2x2 square!
+                    //Would be nice if I could so some anti aliasing but this will have to do for now
+                    int x1 = x * 2;
+                    int x2 = (x * 2) + 1;
+                    int y1 = y * 2;
+                    int y2 = (y * 2) + 1;
+                    if(terrainData.GetHeight(y,x) > 11.0f) //a little up from sealevel.
+                    {
+                        map[x1, y1] = (int)(alphaMapData[x, y, myTextureLayer] + detailStrength);
+                        map[x1, y2] = (int)(alphaMapData[x, y, myTextureLayer] + detailStrength);
+                        map[x2, y1] = (int)(alphaMapData[x, y, myTextureLayer] + detailStrength);
+                        map[x2, y2] = (int)(alphaMapData[x, y, myTextureLayer] + detailStrength);
+                    }
+                   
+                    //if the resolution was the same we could just do the following instead: map [x, y] = (int)alphaMapData [x, y, myTextureLayer] * 10;                 
+                }
+            }
+            terrainData.SetDetailLayer(0, 0, myDetailLayer, map);
+        
+    }
 
         #endregion
 
@@ -352,14 +445,17 @@ namespace TerrainGenerator
                 Neighborhood.ZUp = null;
             }
 
-            if(ChunkFeature != null)
+            if(FeatureComponent != null)
             {
-                var feature = ChunkFeature.GetComponent<ChunkFeatureComponent>();
-                feature.Destroy();
+                FeatureComponent.DestroyAllAssets();
             }
-            if(TreeAssets != null)
+            if(TreesComponent != null)
             {
-                TreeAssets.DestroyAllTrees();
+                TreesComponent.DestroyAllAssets();
+            }
+            if(RocksComponent != null)
+            {
+                RocksComponent.DestroyAllAssets();
             }
             if (Terrain != null)
             {

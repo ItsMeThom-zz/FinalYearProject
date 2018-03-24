@@ -33,7 +33,7 @@ namespace TerrainGenerator
            // Debug.Log("Settings Created");
             NoiseProvider = new NoiseProvider();
 
-            Cache = new ChunkCache();
+            Cache = gameObject.AddComponent<ChunkCache>();
 
             //Debug.Log("Cache Created");
         }

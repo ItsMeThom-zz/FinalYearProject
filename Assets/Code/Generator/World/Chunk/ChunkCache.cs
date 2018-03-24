@@ -5,9 +5,9 @@ using Utils;
 
 namespace TerrainGenerator
 {
-    public class ChunkCache
+    public class ChunkCache : MonoBehaviour
     {
-        private readonly int MaxChunkThreads = 3;
+        private readonly int MaxChunkThreads = 6;
 
         private Dictionary<Vector2i, TerrainChunk> RequestedChunks { get; set; }
 
@@ -113,9 +113,9 @@ namespace TerrainGenerator
                     LoadedChunks.Add(chunk.Key, chunk.Value);
                     
                     SetChunkNeighborhood(chunk.Value);
-                    
-                    chunk.Value.CreateTerrain();
 
+                    chunk.Value.CreateTerrain();
+                    
                     anyTerrainCreated = true;
                     if (OnChunkGenerated != null)
                         OnChunkGenerated.Invoke(ChunksBeingGenerated.Count);

@@ -13,7 +13,7 @@ namespace WorldGen
 {
     public class WorldGenerator
     {
-        public int BaseSeed = 12345678;
+        public int BaseSeed = 20181203;
         public static int MAP_SIZE = 16;
 
         private Perlin WorldMapProvider;
@@ -356,7 +356,7 @@ namespace WorldGen
             int z0 = (MAP_SIZE / 2) + position.Z;
             if (x0 < 0 || x0 > ElevationData.GetLength(0) || z0 < 0 || z0 > ElevationData.GetLength(1))
             {
-                Debug.Log("Chunk is outside the map: " + position.X + "," + position.Z);
+                //Debug.Log("Chunk is outside the map: " + position.X + "," + position.Z);
                 return false;
             }
             else

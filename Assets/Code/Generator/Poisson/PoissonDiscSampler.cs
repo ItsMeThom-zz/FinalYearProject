@@ -21,18 +21,20 @@ public class PoissonDiscSampler// : MonoBehaviour
     public  int attempts;
     private int chunkSize = 129;
 
+    public int Radius { get; set; }
+
     float[,] placementMap;
 
     public PoissonDiscSampler()
     {
-       
 
-        min_radius = 8;
+        this.Radius = 8;
+       
         attempts = 20;
 
         grid = new ArrayList();
         active = new ArrayList();
-        cell_width = min_radius / Math.Sqrt(2);
+        cell_width = Radius / Math.Sqrt(2);
 
         cols = (int)(chunkSize / cell_width);
         rows = (int)(chunkSize / cell_width);
@@ -79,7 +81,7 @@ public class PoissonDiscSampler// : MonoBehaviour
             for (var p = 0; p < attempts; p++)
             {
                 float angle = UnityEngine.Random.Range(0, 2 * (float)Math.PI);
-                offset = UnityEngine.Random.Range(min_radius, 2 * min_radius);
+                offset = UnityEngine.Random.Range(Radius, 2 * Radius);
                 float offsetX = (float)Math.Cos(angle) * offset;
                 float offsetZ = (float)Math.Sin(angle) * offset;
 
@@ -106,7 +108,7 @@ public class PoissonDiscSampler// : MonoBehaviour
                                 if (neighbour != null)
                                 {
                                     float dist = Vector3.Distance(sample, (Vector3)neighbour);
-                                    if (dist < min_radius)
+                                    if (dist < Radius)
                                     {
                                         ok = false;
                                     }

@@ -9,7 +9,7 @@ namespace TerrainGenerator
     public class TerrainChunkSettings
     {
         public static int ChunkSize = 129;
-
+        public static float SeaLevelGlobal = 11.0f;
         public int HeightmapResolution { get; private set; }
 
         public int AlphamapResolution { get; private set; }

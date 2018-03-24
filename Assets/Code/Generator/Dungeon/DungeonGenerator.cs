@@ -4,48 +4,91 @@ using UnityEditor;
 using UnityEngine;
 using Assets.Code;
 using System.Linq;
+using Utils;
 
 public class DungeonGenerator : MonoBehaviour {
+
+    public GameController GameData; //reference to needed gamedata object;
 
     public Dictionary<string, GameObject> DungeonPrefabs;
     GameObject StartRoom_Prefab;
     GameObject Wall_Prefab;
     // Use this for initialization
 
-    public int Iterations = 20;
-    public int Seed = 123456;
-    public float Pause = 1.0f;
+    public int Iterations = 140;
+    public int Seed = 233;
+    public float Pause = 0.01f;
 
-	void Start () {
+    private List<GameObject> PlacedPrefabs;
+    private List<GameObject> PlacedWalls;
 
+    public Vector3 SpawnMarker { get; set; }
+    public Vector3 ExitWorldPosition { get; set; }
 
+    Vector3 DungeonWorldPos; //position of the dungeon in world space
+
+    
+
+    public bool IsReady { get; private set; }
+
+    private void Awake()
+    {
+        GameData = GameController.GetSharedInstance();
+        GameData.DungeonGenerator = this;
+        //this.Seed = GameData.TriggeredDungeonSeed;
         this.loadPrefabs();
-        StartCoroutine(Generate(Seed));
+    }
+    void Start () {
         
+        DungeonWorldPos = this.gameObject.transform.position;
+        //this.Gen(); //debugging only
+    }
+    
 
+
+    public void Generate()
+    {
+        this.loadPrefabs();
+        this.PlacedPrefabs = new List<GameObject>();
+        this.PlacedWalls = new List<GameObject>();
+        Gen(Seed);
     }
 
-    private IEnumerator Generate(int seed)
+    private void Gen(int seed)
     {
+        int instanceIterations = Iterations;
         //move
         Random.InitState(seed);
 
         //start room
-        GameObject start = (Instantiate(StartRoom_Prefab, new Vector3(0, 0, 0), Quaternion.identity));
-
+        GameObject start = (Instantiate(StartRoom_Prefab, DungeonWorldPos, Quaternion.identity));
+        start.transform.parent = this.transform;
         //Add the startroom exit marker to list
-        List<Transform> availableExits = new List<Transform>();
-        availableExits.Add(start.gameObject.transform.Find("ExitMarker"));
-        List<GameObject> usedParts = new List<GameObject>();
-        usedParts.Add(start);
-
-        while (Iterations > 0)
+        List<Transform> availableExits = new List<Transform>
         {
+            start.gameObject.transform.Find("ExitMarker")
+        };
+        
+        //mark the spawnpoint
+        this.SpawnMarker = start.gameObject.transform.Find("SpawnMarker").transform.position;
+        //configure the exit so we can leave the dungeon
+        var exitMarker = start.gameObject.transform.Find("DungeonExit").gameObject;
+        SetExitTriggerPosition(exitMarker);
+
+        this.IsReady = true;
+        PlacedPrefabs.Add(start);
+       
+        //Iterations = 40;
+        while (instanceIterations > 0)
+        {
+            //Debug.Log("Iteration: " + Iterations);
             //Stop if we have no exit markers left
             if(availableExits.Count == 0)
             {
+                Debug.Log("No Exits!");
                 break;
             }
+            Debug.Log("Available Exits: " + availableExits.Count);
 
             Transform marker = availableExits.Pop();
 
@@ -57,7 +100,7 @@ public class DungeonGenerator : MonoBehaviour {
             {
                 string partname = partsnames.Pop();
                 GameObject selectedPart = Instantiate(this.DungeonPrefabs[partname]);
-                //Debug.Log("Trying [" + selectedPart.name + "]");
+                Debug.Log("Trying [" + selectedPart.name + "]");
                 List<Transform> partExits = selectedPart.GetComponent<DungeonPrefabController>().GetAllExits();
                 Transform usedExit = null;
                 //check each available exit orientation on the new part to see if it collides with existing part
@@ -70,15 +113,17 @@ public class DungeonGenerator : MonoBehaviour {
 
                     //checking if this orientation causes a collision with an existing part
                     bool colliding = false;
-                    foreach (var placedPart in usedParts)
+                    foreach (var placedPart in PlacedPrefabs)
                     {
-                        //TODO: check if the collision is with the part were placing against
+                        //check if the collision is with the part were placing against
                         DungeonPrefabController placed = placedPart.GetComponent<DungeonPrefabController>();
-                        //TODO; The bug is here, parentmesh is the seperated collider, not the one on the object for some reason
+                        if(placed == null) { Debug.Log("DUNGEON PART SHOULD NOT BE NULL"); }
+                        
                         if (selectedPart.GetComponent<DungeonPrefabController>().Intersects(placed.parentMesh.bounds))
                         {
                             //Debug.Log(selectedPart.name + " is colliding");
                             colliding = true;
+                            
                             Destroy(mover);
                         }
                     }
@@ -89,8 +134,9 @@ public class DungeonGenerator : MonoBehaviour {
                         // and add the rest to the available
                         fits = true;
                         usedExit = exit;
-                        selectedPart.transform.parent = null;
+                        selectedPart.transform.parent = this.transform;
                         Destroy(mover);
+                        
                         break;
                     }
                     
@@ -105,7 +151,7 @@ public class DungeonGenerator : MonoBehaviour {
                         {
                             if(ext.transform.position == existingExit.transform.position)
                             {
-                                Debug.Log("Coincidental connection identified");
+                                //Debug.Log("Coincidental connection identified");
                                 coincidentals.Add(existingExit);
                                 coincidentals.Add(ext);
                             }
@@ -115,9 +161,10 @@ public class DungeonGenerator : MonoBehaviour {
                     {
                         availableExits.Remove(t);
                     }
-                    usedParts.Add(selectedPart);
+                    PlacedPrefabs.Add(selectedPart);
                     partExits.Remove(usedExit);
                     availableExits.AddRange(partExits);
+                    Debug.Log("Added Part: " + selectedPart.name);
                 }
                 else
                 {
@@ -138,9 +185,11 @@ public class DungeonGenerator : MonoBehaviour {
                 GameObject wall = Instantiate(this.Wall_Prefab);
                 wall.transform.position = marker.transform.position;
                 wall.transform.rotation = marker.transform.rotation;
+                wall.transform.parent = this.transform;
+                PlacedWalls.Add(wall);
             }
-            Iterations--;
-            yield return new WaitForSecondsRealtime(this.Pause);
+            instanceIterations--;
+            //yield return new WaitForSecondsRealtime(this.Pause);
         }
 
         //closing off unused exits at the end of generation
@@ -157,28 +206,67 @@ public class DungeonGenerator : MonoBehaviour {
             }
         }
 
-        
+        RemovePlacementColliders();
+        //Add and initalise the grammar engine to rewrite the room contents
+        var grammarEngine = gameObject.AddComponent<GenerativeGrammar.GrammarEngine>();
+        this.IsReady = true;
 
     }
 
-    
 
-    private void loadPrefabs()
+    private void SetExitTriggerPosition(GameObject entraceDoor)
+    {
+        var exit = entraceDoor.GetComponentInChildren<DungeonExitTrigger>();
+        exit.ReturnToWorldPosition = GameData.TiggeredDungeonEnterance;
+        GameData.PlayerInDungeon = false;
+        GameData.DungeonGenerator.Cleanup();
+    }
+    //Turns off "Convex" on each placed object so the player can move inside them!
+    private void RemovePlacementColliders()
+    {
+        foreach(var piece in PlacedPrefabs)
+        {
+            var colliders = piece.GetComponentsInChildren<MeshCollider>();
+            for(int i = 0; i < colliders.Length; i++)
+            {
+                colliders[i].isTrigger = false;
+                colliders[i].convex = false;
+            }
+        }
+    }
+
+    public void loadPrefabs()
     {
         //load the unique rooms (boss, start room, etc)
 
-        this.StartRoom_Prefab = (GameObject)Resources.Load("dungeon/prefabs/special/startroom", typeof(GameObject));
-        this.Wall_Prefab = (GameObject)Resources.Load("dungeon/prefabs/special/wall", typeof(GameObject));
+        this.StartRoom_Prefab = (GameObject)Resources.Load("donjon/prefabs/special/Entrance1", typeof(GameObject));
+        this.Wall_Prefab = (GameObject)Resources.Load("donjon/prefabs/special/Wall", typeof(GameObject));
         this.DungeonPrefabs = new Dictionary<string, GameObject>();
-        Object[] subListObjects = Resources.LoadAll("dungeon/prefabs/parts", typeof(GameObject));
+        Object[] subListObjects = Resources.LoadAll("donjon/prefabs/parts", typeof(GameObject));
+        //Object[] subListObjects = Resources.LoadAll("donjon/prefabs/parts", typeof(GameObject));
         foreach (GameObject subListObject in subListObjects)
         {
             GameObject lo = (GameObject)subListObject;
             this.DungeonPrefabs.Add(lo.name, lo);
-           // Debug.Log(lo.name + " prefab loaded..");
+            //Debug.Log(lo.name + " prefab loaded..");
         }
 
 
+    }
+
+    public void Cleanup()
+    {
+        //cleanup all dungeon components when the player leaves the dungeon
+        while(this.PlacedPrefabs.Count > 0){
+            var placed = this.PlacedPrefabs.Pop();
+            Destroy(placed);
+        }
+
+        while (this.PlacedWalls.Count > 0)
+        {
+            var placed = this.PlacedWalls.Pop();
+            Destroy(placed);
+        }
     }
 
 

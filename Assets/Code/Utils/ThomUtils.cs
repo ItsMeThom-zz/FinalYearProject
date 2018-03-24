@@ -10,6 +10,21 @@ namespace Utils
 {
     public enum EdgeDirection {NORTH, SOUTH, EAST, WEST }
 
+    public static class MeshUtils
+    {
+        public static Bounds GetCombinedChildColliderBounds(Transform transform)
+        {
+            Bounds bounds = new Bounds(transform.position, Vector3.one);
+            Renderer[] meshes = transform.GetComponentsInChildren<Renderer>();
+            if (meshes.GetLength(0) == 0) { Debug.Log("FUP"); }
+            foreach (Renderer mesh in meshes)
+            {
+                bounds.Encapsulate(mesh.bounds);
+            }
+            return bounds;
+        }
+    }
+
     public static class MathUtils
     {
         /// <summary>
@@ -328,7 +343,6 @@ namespace Utils
 
     }
 
-
     public class RandomPointOnMesh : MonoBehaviour
     {
         public MeshCollider lookupCollider;
@@ -454,6 +468,29 @@ namespace Utils
             {
                 arr[i] = value;
             }
+        }
+
+        //list shuffle extention method
+        // uses a seeded RNG for consistency
+        public static void Shuffle<T>(this IList<T> list)
+        {
+            for (var i = 0; i < list.Count; i++)
+                list.Swap(i, UnityEngine.Random.Range(i, list.Count));
+        }
+
+        //List quick swap extension method
+        public static void Swap<T>(this IList<T> list, int a, int b)
+        {
+            T tmp = list[a];
+            list[a] = list[b];
+            list[b] = tmp;
+        }
+
+        public static T Pop<T>(this IList<T> list)
+        {
+            T firstitem = list[0];
+            list.RemoveAt(0);
+            return firstitem;
         }
     }
 }

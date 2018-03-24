@@ -42,8 +42,8 @@ namespace WorldGen
         /// <returns></returns>
         public Vector2i GetRandomPointInChunk()
         {
-            int x = UnityEngine.Random.Range(1, TerrainChunkSettings.ChunkSize - 1);
-            int z = UnityEngine.Random.Range(1, TerrainChunkSettings.ChunkSize - 1);
+            int x = UnityEngine.Random.Range(32, TerrainChunkSettings.ChunkSize - 32);
+            int z = UnityEngine.Random.Range(32, TerrainChunkSettings.ChunkSize - 32);
             return new Vector2i(x, z);
         }
 

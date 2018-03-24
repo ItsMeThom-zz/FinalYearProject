@@ -8,7 +8,7 @@ class ExitMarker : MonoBehaviour
 {
 
     public bool IsVisible = false;
-    Vector3 DoorSize = new Vector3(2f, 2.5f, 0f);
+    Vector3 DoorSize = new Vector3(2f, 3f, 0f);
 
     void OnDrawGizmosSelected()
     {

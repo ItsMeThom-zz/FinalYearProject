@@ -11,7 +11,7 @@ namespace Assets.Code.Utils
     class TestViewer : MonoBehaviour
     {
 
-        GameController controller;
+        WorldController controller;
 
         WorldGenerator generatorRef;
 
@@ -23,7 +23,7 @@ namespace Assets.Code.Utils
 
         private void Start()
         {
-            controller = transform.parent.GetComponent<GameController>();
+            controller = transform.parent.GetComponent<WorldController>();
             Debug.Log(controller);
             controller.DEV = true; //turn on debugging mode
             var tcg = controller.Generator;
