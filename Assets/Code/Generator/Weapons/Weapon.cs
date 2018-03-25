@@ -7,8 +7,6 @@ using Utils;
 
 namespace Weapons
 {
-    [RequireComponent(typeof(AudioSource))]
-    [RequireComponent(typeof(Rigidbody))]
     public class Weapon : MonoBehaviour
     {
         public string Name = "A weapon";

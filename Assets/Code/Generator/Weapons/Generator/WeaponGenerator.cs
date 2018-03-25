@@ -14,22 +14,25 @@ namespace Weapons
 
         public GrammarEngine GrammarEngine;
 
-        public List<GameObject> SwordStarters  { get; set; }
-        public List<GameObject> AxeStarters    { get; set; }
-        public List<GameObject> HammerStarters { get; set; }
+        [SerializeField]
+        public List<GameObject> SwordStarters;
+        [SerializeField]
+        public List<GameObject> AxeStarters;//    { get; set; }
+        [SerializeField]
+        public List<GameObject> HammerStarters;// { get; set; }
 
 
         private void Start()
         {
-            for(int i = 0; i < 1; i++)
+            for(int i = 0; i < 50; i++)
             {
-                //var wep = Generate(Music.Utils.ChooseEnum<WeaponQuality>(), Music.Utils.ChooseEnum<WeaponType>());
-                //wep.name = "Weapon Object";
+                var wep = Generate(Music.Utils.ChooseEnum<WeaponQuality>(), Music.Utils.ChooseEnum<WeaponType>());
                 //Debug.Log("=========<Weapon>=========");
                 //Debug.Log("DMG: " + wep.TextDamage);
                 //Debug.Log("Speed: " + wep.Speed);
                 //Debug.Log("=========</Weapon>=========");
-                //GameObject obj = Instantiate(wep, this.gameObject.transform);
+                wep.transform.position = this.transform.position;
+                wep.name = "Wep";
             }
            
         }
@@ -39,13 +42,16 @@ namespace Weapons
         {
 
             //create weapon model
-            GameObject weaponObj = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            var weaponObj = GenerateModel(quality, type);
             weaponObj.transform.position = this.transform.position;
-            weaponObj.tag = "Weapon";
+            
             //generate weapon stats
             Weapon weaponComponent = weaponObj.AddComponent<Weapon>();
-            weaponComponent.Data = _dataGenerator.GenerateWeaponData(quality, type); ;
+            weaponComponent.tag = "Weapon";
+            var data = _dataGenerator.GenerateWeaponData(quality, type);
+            weaponComponent.Data = data;
             weaponComponent.Name = GenerateName(quality, type);
+            weaponObj.name = weaponComponent.name;
             return weaponObj;
         }
 
@@ -69,21 +75,22 @@ namespace Weapons
             switch (type)
             {
                 case WeaponType.Sword:
-                    model = Music.Utils.ChooseList(SwordStarters);
+                    model = Instantiate(Music.Utils.ChooseList(SwordStarters));
                     break;
                 case WeaponType.Axe:
-                    model = Music.Utils.ChooseList(SwordStarters);
+                    model = Instantiate(Music.Utils.ChooseList(SwordStarters));
                     break;
                 case WeaponType.Hammer:
-                    model = Music.Utils.ChooseList(SwordStarters);
+                    model = Instantiate(Music.Utils.ChooseList(SwordStarters));
                     break;
                 default:
-                    model = Music.Utils.ChooseList(SwordStarters);
+                    model = Instantiate(Music.Utils.ChooseList(SwordStarters));
                     break;
             }
-            GameObject weaponModel = GrammarEngine.RewriteSpecificAtom(model);
-            return weaponModel;
-
+            
+            GrammarEngine.enabled = true;
+            GrammarEngine.RewriteSpecificAtom(model);
+            return model;
         }
 
        

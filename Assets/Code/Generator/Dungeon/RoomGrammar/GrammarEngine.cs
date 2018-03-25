@@ -49,11 +49,11 @@ namespace GenerativeGrammar
             
             while(AtomQueue.Count > 0)
             {
-                Debug.Log(AtomQueue.Count + " remaining rewrites");
+                //Debug.Log(AtomQueue.Count + " remaining rewrites");
                 Atom atom = AtomQueue.Dequeue();
                 atom.Rewrite();
                 var childAtoms = atom.SubAtoms;
-                Debug.Log("Rewritten Atom has " + childAtoms.Count + "atoms");
+                //Debug.Log("Rewritten Atom has " + childAtoms.Count + "atoms");
                 foreach(var subatom in childAtoms)
                 {
                     AtomQueue.Enqueue(subatom);
@@ -62,9 +62,11 @@ namespace GenerativeGrammar
            
         }
 
-        public GameObject RewriteSpecificAtom(GameObject starterObject)
+        public void RewriteSpecificAtom(GameObject starterObject)
         {
-            var objectatom = starterObject.GetComponent<Atom>();
+            this.AtomQueue = new Queue<Atom>();
+            var objectatom = starterObject.GetComponentInChildren<Atom>();
+
             if(objectatom != null)
             {
                 AtomQueue.Clear();
@@ -72,6 +74,7 @@ namespace GenerativeGrammar
                 while(AtomQueue.Count > 0)
                 {
                     Atom atom = AtomQueue.Dequeue();
+                    atom.GrammarEngine = this;
                     atom.Rewrite();
                     var childAtoms = atom.SubAtoms;
                     
@@ -81,7 +84,11 @@ namespace GenerativeGrammar
                     }
                 }
             }
-            return starterObject;
+            else
+            {
+                print("the object you passed is not an atom");
+            }
+           
         }
     }
 }

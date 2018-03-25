@@ -92,7 +92,7 @@ namespace GenerativeGrammar
                     var subatoms = newAtom.GetComponentsInChildren<Atom>();
                     foreach(var sb in subatoms)
                     {
-                        Debug.Log("SB");
+                        
                         this.GrammarEngine.AtomQueue.Enqueue(sb);
                     }
                     //Destroy(this.gameObject);

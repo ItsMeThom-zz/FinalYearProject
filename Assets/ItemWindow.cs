@@ -21,7 +21,6 @@ public class ItemWindow : MonoBehaviour {
     // Use this for initialization
     void Start () {
         _weaponName = WeaponNameField.GetComponent<TextMeshProUGUI>();
-        if(_weaponName == null) { print("Im fucking null"); }
         _weaponQuality = WeaponQualityField.GetComponent<TextMeshProUGUI>();
         _weaponDamage = WeaponDamageField.GetComponent<TextMeshProUGUI>();
         _weaponSpeed = WeaponSpeedField.GetComponent<TextMeshProUGUI>();
@@ -45,7 +44,7 @@ public class ItemWindow : MonoBehaviour {
             IsEnabled = true;
         }
 
-        var weaponComponent = item.GetComponent<Weapon>();
+        Weapon weaponComponent = item.GetComponent<Weapon>();
         if(weaponComponent != null)
         {
             DisplayWeaponData(weaponComponent);
@@ -67,26 +66,31 @@ public class ItemWindow : MonoBehaviour {
 
     public void DisplayWeaponData(Weapon weapon)
     {
-        
-        Color32 qualityColor = new Color32(220,220,220,255);
-        switch (weapon.Data.Quality)
+        if(weapon.Data != null)
         {
-            case WeaponQuality.Common:
-                break;
-            case WeaponQuality.Rare:
-                qualityColor = new Color32(54, 236, 189, 255);
-                break;
-            case WeaponQuality.Legendary:
-                qualityColor = new Color32(209, 23, 171, 255);
-                break;
-        }
-        _weaponName.text = weapon.Name;
-        _weaponName.color = qualityColor;
-        _weaponQuality.text = weapon.QualityText;
-        _weaponQuality.color = qualityColor;
+            Color32 qualityColor = new Color32(220, 220, 220, 255);
+            switch (weapon.Data.Quality)
+            {
+                case WeaponQuality.Common:
+                    break;
+                case WeaponQuality.Rare:
+                    qualityColor = new Color32(54, 236, 189, 255);
+                    break;
+                case WeaponQuality.Legendary:
+                    qualityColor = new Color32(209, 23, 171, 255);
+                    break;
+            }
+            _weaponName.text = weapon.Name;
+            _weaponName.color = qualityColor;
+            _weaponQuality.text = weapon.QualityText;
+            _weaponQuality.color = qualityColor;
 
-        _weaponDamage.text = weapon.DamageText + " DMG ";
-        _weaponSpeed.text = weapon.Speed.ToString() + " SPD";
-        
+            _weaponDamage.text = weapon.DamageText + " DMG ";
+            _weaponSpeed.text = weapon.Speed.ToString() + " SPD";
+        }
+        else
+        {
+            print("The weapondata is null for this object!");
+        }
     }
 }
