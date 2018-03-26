@@ -7,7 +7,7 @@ namespace TerrainGenerator
 {
     public class ChunkCache : MonoBehaviour
     {
-        private readonly int MaxChunkThreads = 6;
+        private readonly int MaxChunkThreads = 10;
 
         private Dictionary<Vector2i, TerrainChunk> RequestedChunks { get; set; }
 

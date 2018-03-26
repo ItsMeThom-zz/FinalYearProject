@@ -20,7 +20,8 @@ namespace WorldGen
         public override void GenerateFeature()
         {
            /*
-            Unused as of yet. In future versions, feature creations (Wether Grammar-Rewriting or Prefabbing will
+            Unused as of yet. In future versions, feature creations 
+            Wether Grammar-Rewriting or Prefabbing will
             occur here and be stored in the FeatureAssets list. 
             
             This list is accessed by ChunkFeatureGeneratorComoponent

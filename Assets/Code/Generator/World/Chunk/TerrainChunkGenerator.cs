@@ -105,6 +105,12 @@ namespace TerrainGenerator
             return new Vector2i(x, z);
         }
 
+        /// <summary>
+        /// Checks chunks world position and applies height masking as nessecary
+        /// to turn edge chunks into beaches
+        /// </summary>
+        /// <param name="Position">World Position of this chunk</param>
+        /// <returns></returns>
         public ChunkEdge CheckChunkIsEdge(Vector2i Position)
         {
             ChunkEdge edgetype = ChunkEdge.NotEdge;

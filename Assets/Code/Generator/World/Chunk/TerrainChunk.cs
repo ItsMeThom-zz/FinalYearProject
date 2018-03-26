@@ -8,6 +8,7 @@ using WorldGen;
 using LibNoise;
 using LibNoise.Generator;
 using Utils;
+using Assets.NoiseProviders;
 
 namespace TerrainGenerator
 {
@@ -36,9 +37,9 @@ namespace TerrainGenerator
         private object HeightmapThreadLockObject { get; set; }
 
 
-        public Blend BlendModule { get; private set; }
-        public bool HeightmapReady { get; private set; }
-        public Perlin ChunkBlend { get; private set; }
+        public Blend BlendModule         { get; private set; }
+        public bool HeightmapReady       { get; private set; }
+        public NoiseBase ChunkBlend      { get; private set; }
 
 
         public ChunkFeatureComponent FeatureComponent { get; private set; }
@@ -76,13 +77,13 @@ namespace TerrainGenerator
          
             lock (HeightmapThreadLockObject)
             {
-                ChunkBlend = WorldGenerator.ChunkBlendProvider as Perlin;
+                ChunkBlend = WorldGenerator.ChunkBlendProvider;
                 impactors = WorldGenerator.GetChunkBiomes(Position);
                 this.Biomes.AddRange(impactors);
                 //Debug.Log("Chunk " + this.Position.X + ", " + this.Position.Z + ":: " + impactors[0] + ", " + impactors[1]);
                 var biomeA = GetBiomeNoiseProvider(impactors[0]);
                 var biomeB = GetBiomeNoiseProvider(impactors[1]);
-                var SelectModule = new Select(biomeA, biomeB, this.ChunkBlend);
+                var SelectModule = new Select(biomeA, biomeB, this.ChunkBlend.Provider);
                 SelectModule.FallOff = 0.125f;
                 SelectModule.SetBounds(0, 0.3);
                 
@@ -102,7 +103,7 @@ namespace TerrainGenerator
                 //if this chunk is a world edge, we need to  mask it to blend with the ocean
                 if(this.EdgeType != ChunkEdge.NotEdge)
                 {
-                    //Debug.Log("[" + Position.X + "," + Position.Z + "] is a " + this.EdgeType + " edge so will mask.");
+                    Debug.Log("[" + Position.X + "," + Position.Z + "] is a " + this.EdgeType + " edge so will mask.");
                     //interpolation causes seams, we fix that here:
                     
                     float[,] mask = TerrainUtils.GetEdgeMask(this.EdgeType);
@@ -134,22 +135,22 @@ namespace TerrainGenerator
             switch (biomeName)
             {
                 case BiomeType.Ocean:
-                    selectedModule = WorldGenerator.OceanProvider;
+                    selectedModule = WorldGenerator.OceanNoise.Provider;
                     break;
                 case BiomeType.Beach:
-                    selectedModule = WorldGenerator.BeachProvider;
+                    selectedModule = WorldGenerator.BeachNoise.Provider;
                     break;
                 case BiomeType.Plains:
-                    selectedModule = WorldGenerator.PlainsProvider;
+                    selectedModule = WorldGenerator.PlainsNoise.Provider;
                     break;
                 case BiomeType.Hills:
-                    selectedModule = WorldGenerator.HillsProvider;
+                    selectedModule = WorldGenerator.HillsNoise.Provider;
                     break;
                 case BiomeType.Mountains:
-                    selectedModule = WorldGenerator.MountainsProvider;
+                    selectedModule = WorldGenerator.MountainsNoise.Provider;
                     break;
                 default:
-                    selectedModule = WorldGenerator.OceanProvider;
+                    selectedModule = WorldGenerator.OceanNoise.Provider;
                     break;
             }
             return selectedModule;
@@ -163,6 +164,7 @@ namespace TerrainGenerator
 
         public float GetTerrainHeight(Vector3 worldPosition)
         {
+            if(Terrain == null) { Debug.Log("SampleHeight for terrain was null"); return 100.0f; }
             return Terrain.SampleHeight(worldPosition);
         }
 
@@ -174,6 +176,7 @@ namespace TerrainGenerator
 
 
         //NOT Threaded (Can it be?)
+        //TODO: Cleanup this and seperate functionality out.
         public void CreateTerrain()
         {
             GameController GameController = GameController.GetSharedInstance();
@@ -186,16 +189,17 @@ namespace TerrainGenerator
             Data.alphamapResolution = Settings.AlphamapResolution;
             Data.SetHeights(0, 0, Heightmap);
             ApplyTextures(Data);
-            
+            //yield return 0;
 
             // GRASS ADDING
             Data.size = new Vector3(Settings.Length, Settings.Height, Settings.Length);
             AddDetailGrass(Data);
+            //yield return 0;
             GameObject newTerrainGameObject = Terrain.CreateTerrainGameObject(Data);
             newTerrainGameObject.name = "Chunk: [" + Position.X + ", " + Position.Z + "]";
 
             //slightly shift edge chunks up, theyre off due to bilinear interpolation floating point errors
-            float yPos = (this.EdgeType != ChunkEdge.NotEdge) ? 0.15f : 0.0f;
+            float yPos = (this.EdgeType != ChunkEdge.NotEdge) ? 0.1f : 0.0f;
             newTerrainGameObject.transform.position = new Vector3(Position.X * Settings.Length, yPos, Position.Z * Settings.Length);
             newTerrainGameObject.tag = "Terrain";
 
@@ -205,18 +209,18 @@ namespace TerrainGenerator
             Terrain.materialTemplate = Settings.TerrainMaterial;
             Terrain.reflectionProbeUsage = UnityEngine.Rendering.ReflectionProbeUsage.Off;
             Terrain.Flush();
-           
+            //yield return 0;
 
-            
+
             //Adding Trees to this chunk
             if (EdgeType == ChunkEdge.NotEdge)
             {
                 AddTrees();
-               
+                //yield return 0;
             }
            
             AddRocks();
-            
+            //yield return 0;
             //Add feature if nessecary
             AddFeature(newTerrainGameObject);
         }
@@ -334,6 +338,9 @@ namespace TerrainGenerator
             }
         }
 
+        // THOM: This is causing most of the stutter when loading new chunks.
+        // Find a way to offset this, either through threading, or coroutines
+        // ALSO: Clean the bloody comments up!
         private void AddDetailGrass(TerrainData terrainData)
         {
             
@@ -364,13 +371,8 @@ namespace TerrainGenerator
             // get the alhpa maps - i.e. all the ground texture layers
             float[,,] alphaMapData = terrainData.GetAlphamaps(0, 0, terrainData.alphamapWidth, terrainData.alphamapHeight);
             //get the detail map for the grass layer we're after
-            int[,] map = new int[258, 258];//terrainData.GetDetailLayer(0, 0, terrainData.detailWidth, terrainData.detailHeight, myDetailLayer);
-            
+            int[,] map = new int[258, 258];
             //now copy-paste the alpha map onto the detail map, pixel by pixel
-            //Debug.Log("VALS");
-            //Debug.Log(terrainData.alphamapWidth);
-            //Debug.Log(terrainData.alphamapHeight);
-            //Debug.Log(terrainData.alphamapResolution);
             for (int x = 0; x < terrainData.alphamapWidth; x++)
             {
                 for (int y = 0; y < terrainData.alphamapHeight; y++)
@@ -389,7 +391,6 @@ namespace TerrainGenerator
                         map[x2, y1] = (int)(alphaMapData[x, y, myTextureLayer] + detailStrength);
                         map[x2, y2] = (int)(alphaMapData[x, y, myTextureLayer] + detailStrength);
                     }
-                   
                     //if the resolution was the same we could just do the following instead: map [x, y] = (int)alphaMapData [x, y, myTextureLayer] * 10;                 
                 }
             }
@@ -522,79 +523,5 @@ namespace TerrainGenerator
 
         #endregion
 
-        #region Edge Blending (Deprecated)
-
-        public float[] GetChunkEdge(EdgeDirection direction)
-        {
-            int max = Settings.HeightmapResolution;
-            float[] edge = new float[max];
-
-            switch (direction)
-            {
-                case EdgeDirection.NORTH:
-                    for (int z = 0; z < max; z++)
-                    {
-                        edge[z] = this.Heightmap[0, z];
-                    }
-                    break;
-                case EdgeDirection.SOUTH:
-                    for (int z = 0; z < max; z++)
-                    {
-                        edge[z] = this.Heightmap[max - 1, z];
-                    }
-                    break;
-                case EdgeDirection.EAST:
-                    for (int x = 0; x < max; x++)
-                    {
-                        edge[x] = this.Heightmap[x, max - 1];
-                    }
-                    break;
-                case EdgeDirection.WEST:
-                    for (int x = 0; x < max; x++)
-                    {
-                        edge[x] = this.Heightmap[x, 0];
-                    }
-                    break;
-            }
-
-            return edge;
-        }
-
-        public void SetChunkEdge(EdgeDirection direction, float[] newvalues)
-        {
-            int max = Settings.HeightmapResolution;
-            float[] edge = new float[max];
-
-            switch (direction)
-            {
-                case EdgeDirection.NORTH:
-                    for (int z = 0; z < max; z++)
-                    {
-                        this.Heightmap[0, z] = newvalues[z];
-                    }
-                    break;
-                case EdgeDirection.SOUTH:
-                    for (int z = 0; z < max; z++)
-                    {
-                        this.Heightmap[max - 1, z] = newvalues[z];
-                    }
-                    break;
-                case EdgeDirection.EAST:
-                    for (int x = 0; x < max; x++)
-                    {
-                        this.Heightmap[x, max - 1] = newvalues[x];
-                    }
-                    break;
-                case EdgeDirection.WEST:
-                    for (int x = 0; x < max; x++)
-                    {
-                        this.Heightmap[x, 0] = newvalues[x];
-                    }
-                    break;
-            }
-
-        }
-
-        #endregion
     }
 }

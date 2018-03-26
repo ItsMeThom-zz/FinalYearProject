@@ -1,4 +1,4 @@
-﻿namespace TerrainGenerator
+﻿namespace Assets.NoiseProviders
 {
     public interface INoiseProvider
     {

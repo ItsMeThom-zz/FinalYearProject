@@ -1,4 +1,5 @@
-﻿using LibNoise.Generator;
+﻿using Assets.NoiseProviders;
+using LibNoise.Generator;
 
 namespace TerrainGenerator
 {

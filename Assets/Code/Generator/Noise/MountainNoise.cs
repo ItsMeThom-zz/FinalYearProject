@@ -6,12 +6,10 @@ using TerrainGenerator;
 using LibNoise.Generator;
 using LibNoise.Operator;
 
-namespace Assets.Code.Generator.Noise
+namespace Assets.NoiseProviders
 {
     public class MountainNoise : NoiseBase, INoiseProvider
     {
-
-        LibNoise.ModuleBase provider;
 
         static MountainNoise _instance;
 
@@ -37,8 +35,8 @@ namespace Assets.Code.Generator.Noise
 
         MountainNoise(int seed) //specific seed provided
         {
-            BaseSeed = seed;
-            ConfigureProviders(BaseSeed);
+            Seed = seed;
+            ConfigureProviders(Seed);
         }
 
         protected override void ConfigureProviders(int seed)
@@ -55,13 +53,13 @@ namespace Assets.Code.Generator.Noise
                 Scale = 0.5f,
                 //Bias = 0
             };
-            this.provider = prov;
+            this._baseProvider = prov;
         }
 
         //return a value from the specified provider
         public float GetValue(float x, float z)
         {
-            return (float)provider.GetValue(x, 0, z);
+            return (float)_baseProvider.GetValue(x, 0, z);
         }
     }
 }
