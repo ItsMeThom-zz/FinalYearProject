@@ -85,10 +85,10 @@ namespace GenerativeGrammar
                 if(selectedRule.Type != null)
                 {
                     //Create a new object at the atom components position
-                    GameObject newAtom = Instantiate(selectedRule.Type, this.transform.position, this.transform.rotation);
-                    
-                    newAtom.transform.SetPositionAndRotation(this.transform.parent.position, Quaternion.identity);
+                    GameObject newAtom = Instantiate(selectedRule.Type);
                     newAtom.transform.SetParent(this.transform.parent, true);
+
+                    newAtom.transform.localPosition = this.transform.localPosition;
                     var subatoms = newAtom.GetComponentsInChildren<Atom>();
                     foreach(var sb in subatoms)
                     {

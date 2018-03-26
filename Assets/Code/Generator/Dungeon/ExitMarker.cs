@@ -1,6 +1,6 @@
 ﻿// Create a semi transparent rectangle that lets you modify
 // the "range" var that resides in "SolidRectangleExample.js"
-using UnityEditor;
+
 using UnityEngine;
 
 

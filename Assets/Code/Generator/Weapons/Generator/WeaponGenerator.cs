@@ -17,27 +17,37 @@ namespace Weapons
         [SerializeField]
         public List<GameObject> SwordStarters;
         [SerializeField]
-        public List<GameObject> AxeStarters;//    { get; set; }
+        public List<GameObject> AxeStarters;
         [SerializeField]
-        public List<GameObject> HammerStarters;// { get; set; }
+        public List<GameObject> HammerStarters;
 
 
         private void Start()
         {
-            for(int i = 0; i < 50; i++)
+            //test method to spawn random weapons
+            for(int i = 0; i < 10; i++)
             {
-                var wep = Generate(Music.Utils.ChooseEnum<WeaponQuality>(), Music.Utils.ChooseEnum<WeaponType>());
-                //Debug.Log("=========<Weapon>=========");
-                //Debug.Log("DMG: " + wep.TextDamage);
-                //Debug.Log("Speed: " + wep.Speed);
-                //Debug.Log("=========</Weapon>=========");
+                //var wep = Generate(Music.Utils.ChooseEnum<WeaponQuality>(), Music.Utils.ChooseEnum<WeaponType>());
+                var wep = Generate(Music.Utils.ChooseEnum<WeaponQuality>(), WeaponType.Axe);
                 wep.transform.position = this.transform.position;
                 wep.name = "Wep";
             }
-           
+            for (int i = 0; i < 10; i++)
+            {
+                //var wep = Generate(Music.Utils.ChooseEnum<WeaponQuality>(), Music.Utils.ChooseEnum<WeaponType>());
+                var wep = Generate(Music.Utils.ChooseEnum<WeaponQuality>(), WeaponType.Sword);
+                wep.transform.position = this.transform.position;
+                wep.name = "Wep";
+            }
+
         }
 
-
+        /// <summary>
+        /// Handles generating the stats (data) and model for this object
+        /// </summary>
+        /// <param name="quality"></param>
+        /// <param name="type"></param>
+        /// <returns></returns>
         public GameObject Generate(WeaponQuality quality, WeaponType type)
         {
 
@@ -52,6 +62,10 @@ namespace Weapons
             weaponComponent.Data = data;
             weaponComponent.Name = GenerateName(quality, type);
             weaponObj.name = weaponComponent.name;
+            var rb = weaponObj.AddComponent<Rigidbody>();
+           
+            rb.mass = 0.1f;
+            rb.useGravity = true;
             return weaponObj;
         }
 
@@ -68,7 +82,12 @@ namespace Weapons
 
         }
 
-
+        /// <summary>
+        /// Uses grammar rewriting to generate the model for this weapon
+        /// </summary>
+        /// <param name="quality"></param>
+        /// <param name="type"></param>
+        /// <returns></returns>
         public GameObject GenerateModel(WeaponQuality quality, WeaponType type)
         {
             GameObject model;
@@ -78,7 +97,7 @@ namespace Weapons
                     model = Instantiate(Music.Utils.ChooseList(SwordStarters));
                     break;
                 case WeaponType.Axe:
-                    model = Instantiate(Music.Utils.ChooseList(SwordStarters));
+                    model = Instantiate(Music.Utils.ChooseList(AxeStarters));
                     break;
                 case WeaponType.Hammer:
                     model = Instantiate(Music.Utils.ChooseList(SwordStarters));

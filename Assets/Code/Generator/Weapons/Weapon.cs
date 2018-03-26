@@ -76,8 +76,47 @@ namespace Weapons
         }
         #endregion
 
+       
+        public void DisableRigidBody()
+        {
+            Rigidbody body = GetComponent<Rigidbody>();
+            if (body)
+            {
+                body.isKinematic = true;
+                body.useGravity = false;
+                body.mass = 0f;
+            }
+            BoxCollider[] childColl = GetComponentsInChildren<BoxCollider>();
+            if (childColl != null)
+            {
+                foreach(var c in childColl)
+                {
+                    c.enabled = false;
+                }
+            }
+        }
 
+        public void EnableRigidBody()
+        {
+            Rigidbody body = GetComponent<Rigidbody>();
+            if (body)
+            {
+                body.isKinematic = false;
+                body.useGravity = true;
+                body.mass = 0.1f;
+                
+            }
+            BoxCollider[] childColl = GetComponentsInChildren<BoxCollider>();
+            if (childColl != null)
+            {
+                foreach (var c in childColl)
+                {
+                    c.enabled = true;
+                }
+            }
+        }
 
+      
 
     }
 }

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Assets.Code.Player;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -6,7 +7,9 @@ using Weapons;
 
 public class CrosshairItemDetector : MonoBehaviour {
 
-    Camera cam;
+    private Camera cam; //reference to player camera to use centerpoint for raycasts
+
+    public PlayerController Controller;
 
     public delegate void HitEvent(GameObject obj);
     public static event HitEvent ItemHit;
@@ -24,18 +27,14 @@ public class CrosshairItemDetector : MonoBehaviour {
         RaycastHit hit;
         if (Physics.Raycast(ray, out hit, 10f))
         {
-            if (hit.collider.gameObject.tag.Equals("Weapon") && hit.distance < 10f)
+            if (hit.collider.gameObject.tag.Equals("Weapon") || hit.collider.gameObject.tag.Equals("Interactable"))
             {
-                var weaponChild = hit.collider.gameObject.name;
-                print(weaponChild);
-                //BroadcastMessage("ShowInfoBox", hit.collider.gameObject);
                 ItemHit(hit.collider.gameObject);
             }
         }
         else
         {
             NoItemHit();
-            //BroadcastMessage("HideInfoBox");
         }
             
     }

@@ -77,11 +77,11 @@ namespace GenerativeGrammar
                     atom.GrammarEngine = this;
                     atom.Rewrite();
                     var childAtoms = atom.SubAtoms;
-                    
                     foreach (var subatom in childAtoms)
                     {
                         AtomQueue.Enqueue(subatom);
                     }
+                    Destroy(atom.gameObject);
                 }
             }
             else
