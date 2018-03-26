@@ -66,6 +66,7 @@ namespace WorldGen
 
         public WorldGenerator()
         {
+            BaseSeed = GameController.GetSharedInstance().BaseSeed; //set the input seed
             this.ElevationMaxValue = 0.0f;
             this.ElevationMinValue = float.MaxValue;
             InitNoiseProviders();

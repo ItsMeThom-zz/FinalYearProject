@@ -5,6 +5,10 @@ using UnityEngine;
 using UnityEngine.UI;
 using Utils;
 
+/// <summary>
+/// Initalises world generation, and terrain chunk generation components
+/// Holds data related to the world
+/// </summary>
 public class WorldController : MonoBehaviour
 {
     public GameController GameData;
@@ -18,7 +22,8 @@ public class WorldController : MonoBehaviour
 
     public Button StartButton;
 
-    public Renderer MapRenderer;
+    //player camera rendering while the world is being generated
+    public GameObject LoadingCamera;
 
     public bool DEV = false;
     public bool IsReady = false;
@@ -54,8 +59,10 @@ public class WorldController : MonoBehaviour
         Player.position = new Vector3(Player.position.x, Generator.GetTerrainHeight(Player.position) + 0.5f, Player.position.z);
         Player.gameObject.SetActive(true);
         WaterPlane.gameObject.SetActive(true);
+        LoadingCamera.GetComponentInChildren<Camera>().enabled = false;
+        LoadingCamera.GetComponentInChildren<Canvas>().enabled = false;
         this.IsReady = true;
-        RenderWorldMap();
+        
     }
 
     private void Update()
@@ -87,39 +94,28 @@ public class WorldController : MonoBehaviour
         }
     }
 
-    private void RenderWorldMap()
-    {
-        
-        //var worldgen = GameObject.FindObjectOfType<TerrainChunkGenerator>().WorldGenerator;
-        //Texture2D tex = CreateTexture(worldgen.ElevationData);
-        //var mapcam = GameObject.Find("WorldMap");
-        //var textureRender = mapcam.GetComponent<Renderer>().material.mainTexture = tex;
 
-        //MapRenderer.sharedMaterial.mainTexture = textureRender;
-        //MapRenderer.transform.localScale = new Vector3(textureRender.width, 1, textureRender.height);
-    }
+    //private Texture2D CreateTexture(float[,] noisemap)
+    //{
+    //    int width = noisemap.GetLength(0);
+    //    int height = noisemap.GetLength(1);
 
-    private Texture2D CreateTexture(float[,] noisemap)
-    {
-        int width = noisemap.GetLength(0);
-        int height = noisemap.GetLength(1);
+    //    Texture2D texture = new Texture2D(width, height);
 
-        Texture2D texture = new Texture2D(width, height);
+    //    Color[] colourMap = new Color[width * height];
+    //    for (int y = 0; y < height; y++)
+    //    {
+    //        for (int x = 0; x < width; x++)
+    //        {
+    //            colourMap[y * width + x] = Color.LerpUnclamped(Color.black, Color.white, noisemap[x, y]);
+    //        }
+    //    }
+    //    texture.SetPixels(colourMap);
+    //    texture.Apply();
 
-        Color[] colourMap = new Color[width * height];
-        for (int y = 0; y < height; y++)
-        {
-            for (int x = 0; x < width; x++)
-            {
-                colourMap[y * width + x] = Color.LerpUnclamped(Color.black, Color.white, noisemap[x, y]);
-            }
-        }
-        texture.SetPixels(colourMap);
-        texture.Apply();
-
-        return texture;
+    //    return texture;
 
         
         
-    }
+    //}
 }

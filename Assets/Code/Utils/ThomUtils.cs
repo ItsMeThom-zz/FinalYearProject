@@ -493,4 +493,24 @@ namespace Utils
             return firstitem;
         }
     }
+
+    public static class StringUtils
+    {
+        /// <summary>
+        /// Convert a string (AAAA) to an integer representing its unicode value (65656565)
+        /// </summary>
+        /// <param name="s"></param>
+        /// <returns></returns>
+        public static int StringToUnicode(string s)
+        {
+            int num = 1;
+            foreach(char c in s)
+            {
+                num += Convert.ToInt32(c);
+            }
+            return num;
+        }
+
+    }
+    
 }

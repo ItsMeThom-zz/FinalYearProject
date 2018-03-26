@@ -8,10 +8,11 @@ using UnityEngine;
 
 namespace KNN
 {
-
+    
 
     public static class MapUtils
     {
+        
         /// <summary>
         /// Performs Bilinear Interpolation of a 2d array of floats
         /// </summary>

@@ -35,7 +35,7 @@ public class DungeonGenerator : MonoBehaviour {
     {
         GameData = GameController.GetSharedInstance();
         GameData.DungeonGenerator = this;
-        //this.Seed = GameData.TriggeredDungeonSeed;
+        
         this.loadPrefabs();
     }
     void Start () {
@@ -48,6 +48,7 @@ public class DungeonGenerator : MonoBehaviour {
 
     public void Generate()
     {
+        this.Seed = GameData.TriggeredDungeonSeed;
         this.loadPrefabs();
         this.PlacedPrefabs = new List<GameObject>();
         this.PlacedWalls = new List<GameObject>();
