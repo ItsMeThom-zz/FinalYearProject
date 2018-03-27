@@ -357,12 +357,12 @@ namespace WorldGen
             int z0 = (MAP_SIZE / 2) + position.Z;
             if (x0 < 0 || (x0 > ElevationData.GetLength(0) - 1) || z0 < 0 || (z0 > ElevationData.GetLength(1) -1))
             {
-                Debug.Log("Chunk is outside the map: " + position.X + "," + position.Z);
+                //Debug.Log("Chunk is outside the map: " + position.X + "," + position.Z);
                 return false;
             }
             else
             {
-                Debug.Log("Chunk is INSIDE the map: " + position.X + "," + position.Z);
+                //Debug.Log("Chunk is INSIDE the map: " + position.X + "," + position.Z);
                 return true;
             }
         }

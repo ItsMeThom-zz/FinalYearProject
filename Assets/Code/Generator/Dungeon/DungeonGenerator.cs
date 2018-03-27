@@ -12,6 +12,7 @@ public class DungeonGenerator : MonoBehaviour {
 
     public Dictionary<string, GameObject> DungeonPrefabs;
     GameObject StartRoom_Prefab;
+    GameObject BossRoom_Prefab;
     GameObject Wall_Prefab;
     // Use this for initialization
 
@@ -86,10 +87,10 @@ public class DungeonGenerator : MonoBehaviour {
             //Stop if we have no exit markers left
             if(availableExits.Count == 0)
             {
-                Debug.Log("No Exits!");
+                //Debug.Log("No Exits!");
                 break;
             }
-            Debug.Log("Available Exits: " + availableExits.Count);
+            //Debug.Log("Available Exits: " + availableExits.Count);
 
             Transform marker = availableExits.Pop();
 
@@ -101,7 +102,7 @@ public class DungeonGenerator : MonoBehaviour {
             {
                 string partname = partsnames.Pop();
                 GameObject selectedPart = Instantiate(this.DungeonPrefabs[partname]);
-                Debug.Log("Trying [" + selectedPart.name + "]");
+                //Debug.Log("Trying [" + selectedPart.name + "]");
                 List<Transform> partExits = selectedPart.GetComponent<DungeonPrefabController>().GetAllExits();
                 Transform usedExit = null;
                 //check each available exit orientation on the new part to see if it collides with existing part
@@ -165,7 +166,7 @@ public class DungeonGenerator : MonoBehaviour {
                     PlacedPrefabs.Add(selectedPart);
                     partExits.Remove(usedExit);
                     availableExits.AddRange(partExits);
-                    Debug.Log("Added Part: " + selectedPart.name);
+                    //Debug.Log("Added Part: " + selectedPart.name);
                 }
                 else
                 {
@@ -196,15 +197,30 @@ public class DungeonGenerator : MonoBehaviour {
         //closing off unused exits at the end of generation
         if(availableExits.Count > 0)
         {
-            foreach(var openexit in availableExits)
+            for(int i = 0; i < availableExits.Count - 2; i++)
             {
-               
                 GameObject wallfiller = Instantiate(this.Wall_Prefab);
-                wallfiller.transform.position = openexit.transform.position;
-                wallfiller.transform.rotation = openexit.transform.rotation;
-                wallfiller.transform.SetParent(openexit.transform.parent);
-                //Debug.Log("Rotation wall in ["+ openexit.transform.parent.name + "]to " + openexit.transform.eulerAngles);
+                wallfiller.transform.position = availableExits[i].transform.position;
+                wallfiller.transform.rotation = availableExits[i].transform.rotation;
+                wallfiller.transform.SetParent(availableExits[i].transform.parent);
             }
+            int lastMarker = availableExits.Count - 1;
+            var BossRoom = Instantiate(BossRoom_Prefab);
+            List<Transform> bossExit = BossRoom.GetComponent<DungeonPrefabController>().GetAllExits();
+            GameObject mover = BossRoom.GetComponent<DungeonPrefabController>().OrientExit(bossExit[0]);
+            mover.transform.position = availableExits[lastMarker].transform.position;
+            mover.transform.rotation = availableExits[lastMarker].transform.rotation;
+            mover.transform.Rotate(new Vector3(0, 180, 0));
+            PlacedPrefabs.Add(BossRoom);
+            //foreach (var openexit in availableExits)
+            //{
+               
+            //    GameObject wallfiller = Instantiate(this.Wall_Prefab);
+            //    wallfiller.transform.position = openexit.transform.position;
+            //    wallfiller.transform.rotation = openexit.transform.rotation;
+            //    wallfiller.transform.SetParent(openexit.transform.parent);
+            //    //Debug.Log("Rotation wall in ["+ openexit.transform.parent.name + "]to " + openexit.transform.eulerAngles);
+            //}
         }
 
         RemovePlacementColliders();
@@ -241,6 +257,7 @@ public class DungeonGenerator : MonoBehaviour {
         //load the unique rooms (boss, start room, etc)
 
         this.StartRoom_Prefab = (GameObject)Resources.Load("donjon/prefabs/special/Entrance1", typeof(GameObject));
+        this.BossRoom_Prefab = (GameObject)Resources.Load("donjon/prefabs/special/bossroom", typeof(GameObject));
         this.Wall_Prefab = (GameObject)Resources.Load("donjon/prefabs/special/Wall", typeof(GameObject));
         this.DungeonPrefabs = new Dictionary<string, GameObject>();
         Object[] subListObjects = Resources.LoadAll("donjon/prefabs/parts", typeof(GameObject));
