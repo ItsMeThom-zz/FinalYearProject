@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Player;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -20,8 +21,9 @@ namespace Assets.Code.Player
         {
             Data = PlayerData.GetSharedInstance();
             //subscribe to the crosshair hit event so we know if we can collect this item
+            CrosshairItemDetector.WeaponHit += SetItemAtPoint;
             CrosshairItemDetector.ItemHit += SetItemAtPoint;
-            CrosshairItemDetector.NoItemHit += ClearItemAtPoint;
+            CrosshairItemDetector.NothingHit += ClearItemAtPoint;
 
             WeaponAnimator = GetComponentInChildren<Animator>();
             WeaponAnimator.SetBool("SwordEquipped", false);
@@ -38,7 +40,15 @@ namespace Assets.Code.Player
             {
                 if(ItemAtPoint != null)
                 {
-                    MoveWeaponToHand(ItemAtPoint.gameObject);
+                    if(ItemAtPoint.tag.Equals("Weapon"))
+                    {
+                        print("Weapon E");
+                        MoveWeaponToHand(ItemAtPoint.gameObject);
+                    }else if(ItemAtPoint.tag.Equals("Interactable")){
+                        print("Interactable Item E");
+                        ConsumeInteractableItem(ItemAtPoint.gameObject);
+                    }
+                    
                 }
             }
 
@@ -49,6 +59,16 @@ namespace Assets.Code.Player
                     MoveWeaponFromHand();
                 }
             }
+        }
+
+        private void ConsumeInteractableItem(GameObject gameObject)
+        {
+            IInteractable item = gameObject.GetComponent<IInteractable>();
+            if(item != null)
+            {
+                item.Consume(gameObject);
+            }
+
         }
 
         public void TakeDamage(int damage)

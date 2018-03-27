@@ -77,7 +77,9 @@ public class DungeonGenerator : MonoBehaviour {
        
         while (instanceIterations > 0)
         {
-            //Leave one available exit for boss room
+            //break if we run out of exits before we finish the iterations.
+            // note: this should *never* happen.
+            // becaue it means we cannot place a boss room.
             if(availableExits.Count == 0)
             {
                 break;
@@ -133,20 +135,20 @@ public class DungeonGenerator : MonoBehaviour {
                     var fits = TryPlacingPart(BossRoom, availableExits[count], out usedExit);
                     if (fits)
                     {
-                        print("BOSS ROOM FITS!");
+                        //print("BOSS ROOM FITS!");
                         PlacedPrefabs.Add(BossRoom);
                         bossPlaced = true;
                         //break;
                     }
                     else
                     {
-                        print("BOSS NO FIT. PLACE WALL");
+                        //print("BOSS NO FIT. PLACE WALL");
                         PlaceWallAtExit(availableExits[count]);
                     }
                 }
                 else
                 {
-                    print("JUST PLACING WALLS NOW");
+                    //print("JUST PLACING WALLS NOW");
                     PlaceWallAtExit(availableExits[count]);
                 }
                 count--;

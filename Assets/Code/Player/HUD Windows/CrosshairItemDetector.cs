@@ -11,10 +11,14 @@ public class CrosshairItemDetector : MonoBehaviour {
 
     public PlayerController Controller;
 
-    public delegate void HitEvent(GameObject obj);
-    public static event HitEvent ItemHit;
+    public delegate void WeaponHitEvent(GameObject obj);
+    public static event WeaponHitEvent WeaponHit;
+
+    public delegate void ItemHitEvent(GameObject obj);
+    public static event ItemHitEvent ItemHit;
+
     public delegate void NoItemHitEvent();
-    public static event NoItemHitEvent NoItemHit;
+    public static event NoItemHitEvent NothingHit;
     
 
     void Start () {
@@ -27,14 +31,24 @@ public class CrosshairItemDetector : MonoBehaviour {
         RaycastHit hit;
         if (Physics.Raycast(ray, out hit, 10f))
         {
-            if (hit.collider.gameObject.tag.Equals("Weapon") || hit.collider.gameObject.tag.Equals("Interactable"))
+            if (hit.collider.gameObject.tag.Equals("Weapon"))
             {
+                print("Weapon detected");
+                WeaponHit(hit.collider.gameObject);
+            }else if (hit.collider.gameObject.tag.Equals("Interactable"))
+            {
+                print("Interactable detected");
                 ItemHit(hit.collider.gameObject);
             }
+            else
+            {
+                NothingHit();
+            }
+
         }
         else
         {
-            NoItemHit();
+            NothingHit();
         }
             
     }

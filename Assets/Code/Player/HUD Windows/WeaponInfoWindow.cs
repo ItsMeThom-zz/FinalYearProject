@@ -4,7 +4,7 @@ using TMPro;
 using UnityEngine;
 using Weapons;
 
-public class ItemWindow : MonoBehaviour {
+public class WeaponInfoWindow : MonoBehaviour {
 
     private bool IsEnabled = false;
     public Canvas InfoCanvas;
@@ -25,15 +25,10 @@ public class ItemWindow : MonoBehaviour {
         _weaponDamage = WeaponDamageField.GetComponent<TextMeshProUGUI>();
         _weaponSpeed = WeaponSpeedField.GetComponent<TextMeshProUGUI>();
 
-        CrosshairItemDetector.ItemHit += ShowInfoBox;
-        CrosshairItemDetector.NoItemHit += HideInfoBox;
+        CrosshairItemDetector.WeaponHit += ShowInfoBox;
+        CrosshairItemDetector.NothingHit += HideInfoBox;
     }
 	
-	// Update is called once per frame
-	void Update () {
-        
-	}
-
     public void ShowInfoBox(GameObject item)
     {
         
