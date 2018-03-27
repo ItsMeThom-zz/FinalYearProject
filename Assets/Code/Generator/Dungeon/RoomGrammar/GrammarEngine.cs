@@ -21,12 +21,13 @@ namespace GenerativeGrammar
          */
         public Queue<Atom> AtomQueue;
 
-        private void Awake()
+
+        private void Start()
         {
             //Get all inital parent level atoms
             AtomQueue = new Queue<Atom>();
             Atom[] childAtoms = GetComponentsInChildren<Atom>();
-            if( (childAtoms != null) && (childAtoms.Count() > 0))
+            if ((childAtoms != null) && (childAtoms.Count() > 0))
             {
                 for (int i = 0; i < childAtoms.Count(); i++)
                 {
@@ -36,12 +37,8 @@ namespace GenerativeGrammar
             }
             else
             {
-                Debug.Log("Grammar Engine found no child atoms");
+                //Debug.Log("Grammar Engine found no child atoms");
             }
-        }
-
-        private void Start()
-        {
             RewriteAtoms();
         }
         public void RewriteAtoms()
@@ -53,11 +50,13 @@ namespace GenerativeGrammar
                 Atom atom = AtomQueue.Dequeue();
                 atom.Rewrite();
                 var childAtoms = atom.SubAtoms;
-                //Debug.Log("Rewritten Atom has " + childAtoms.Count + "atoms");
+                Debug.Log("Rewritten Atom has " + childAtoms.Count + "atoms");
                 foreach(var subatom in childAtoms)
                 {
+                    subatom.GrammarEngine = this;
                     AtomQueue.Enqueue(subatom);
                 }
+                //Destroy(atom);
             }
            
         }
@@ -81,7 +80,7 @@ namespace GenerativeGrammar
                     {
                         AtomQueue.Enqueue(subatom);
                     }
-                    Destroy(atom.gameObject);
+                    //Destroy(atom.gameObject);
                 }
             }
             else

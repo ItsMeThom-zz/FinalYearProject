@@ -10,6 +10,9 @@ public class GameController {
     public int TriggeredDungeonSeed { get; set; }  //seed of dungeon that was triggered to generate
     public Vector3 TiggeredDungeonEnterance { get; set; }  // position of door we entered through
 
+    //store the seed of completed dungeons so we can prevent key spawning
+
+    public List<int> CompletedDungeonList { get; set; } 
 
     public int BaseSeed { get; set; }
     public DungeonGenerator DungeonGenerator {get; set;}
@@ -21,6 +24,7 @@ public class GameController {
             _instance = new GameController();
             _instance.BaseSeed = 20180321;
             _instance.DungeonGenerator = new DungeonGenerator();
+            _instance.CompletedDungeonList = new List<int>();
         }
         return _instance;
     }

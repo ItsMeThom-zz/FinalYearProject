@@ -24,21 +24,24 @@ namespace Weapons
 
         private void Start()
         {
-            //test method to spawn random weapons
-            for(int i = 0; i < 10; i++)
-            {
-                //var wep = Generate(Music.Utils.ChooseEnum<WeaponQuality>(), Music.Utils.ChooseEnum<WeaponType>());
-                var wep = Generate(Music.Utils.ChooseEnum<WeaponQuality>(), WeaponType.Axe);
-                wep.transform.position = this.transform.position;
-                wep.name = "Wep";
-            }
-            for (int i = 0; i < 10; i++)
-            {
-                //var wep = Generate(Music.Utils.ChooseEnum<WeaponQuality>(), Music.Utils.ChooseEnum<WeaponType>());
-                var wep = Generate(Music.Utils.ChooseEnum<WeaponQuality>(), WeaponType.Sword);
-                wep.transform.position = this.transform.position;
-                wep.name = "Wep";
-            }
+            Debug.Log("WEP GEN INITATED::::");
+            var wep = Generate(Music.Utils.ChooseEnum<WeaponQuality>(), Music.Utils.ChooseEnum<WeaponType>());
+            wep.transform.position = this.transform.position;
+            ////test method to spawn random weapons
+            //for(int i = 0; i < 10; i++)
+            //{
+            //    //
+            //    var wep = Generate(Music.Utils.ChooseEnum<WeaponQuality>(), WeaponType.Axe);
+            //    wep.transform.position = this.transform.position;
+            //    wep.name = "Wep";
+            //}
+            //for (int i = 0; i < 10; i++)
+            //{
+            //    //var wep = Generate(Music.Utils.ChooseEnum<WeaponQuality>(), Music.Utils.ChooseEnum<WeaponType>());
+            //    var wep = Generate(Music.Utils.ChooseEnum<WeaponQuality>(), WeaponType.Sword);
+            //    wep.transform.position = this.transform.position;
+            //    wep.name = "Wep";
+            //}
 
         }
 

@@ -54,7 +54,7 @@ namespace GenerativeGrammar
 
             }
             SubAtoms = new List<Atom>();
-            GetSubAtoms();
+            //GetSubAtoms();
             
         }
 
@@ -89,14 +89,19 @@ namespace GenerativeGrammar
                     newAtom.transform.SetParent(this.transform.parent, true);
 
                     newAtom.transform.localPosition = this.transform.localPosition;
+
                     var subatoms = newAtom.GetComponentsInChildren<Atom>();
-                    foreach(var sb in subatoms)
+                    if (subatoms != null)
                     {
-                        
-                        this.GrammarEngine.AtomQueue.Enqueue(sb);
+                        foreach (var sb in subatoms)
+                        {
+                            //Debug.Log("Rewriting: " + sb.GetHashCode());
+                            sb.GrammarEngine = this.GrammarEngine;
+                            this.GrammarEngine.AtomQueue.Enqueue(sb);
+                        }
                     }
                     //Destroy(this.gameObject);
-                    
+
                 }
                 else
                 {
@@ -133,7 +138,7 @@ namespace GenerativeGrammar
         private void GetSubAtoms()
         {
             Atom[] subatoms = this.gameObject.GetComponentsInChildren<Atom>();
-            Debug.Log("This atom [" + gameObject.name + "]" + " has " + subatoms.GetLength(0) + " subatoms");
+            //Debug.Log("This atom [" + gameObject.name + ", "+ gameObject.GetHashCode() + "]" + " has " + subatoms.GetLength(0) + " subatoms");
             //the spawned item has subatoms we will need to resolve
             if (subatoms != null)
             {
