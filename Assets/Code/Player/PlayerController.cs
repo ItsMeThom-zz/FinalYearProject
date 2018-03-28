@@ -8,17 +8,29 @@ using Weapons;
 
 namespace Assets.Code.Player
 {
+    /// <summary>
+    /// PlayerController handles player interaction. It subscribed to events
+    /// from the CrosshairDetector component in order to register items that are
+    /// interactable such as weapons or consumables.
+    /// </summary>
     public class PlayerController : MonoBehaviour, IDamageable
     {
-        PlayerData Data;
-        public Transform WeaponPosition; //place an equipped weapon is shown
-        public GameObject EquippedWeapon;
-        public Transform ItemAtPoint;
+        private PlayerData Data;
+        public  Transform  WeaponPosition; //place an equipped weapon is shown
+        public  GameObject EquippedWeapon;
+        public  Transform  ItemAtPoint;
+        public  Animator   WeaponAnimator;
 
-        public Animator WeaponAnimator;
+        #region UI Events
+        public delegate void GoldChangedEvent();
+        public static event GoldChangedEvent GoldChanged;
+        public delegate void HealthChangeEvent();
+        public static event HealthChangeEvent HealthChanged;
+        #endregion
 
         void Awake()
         {
+            GameController.GetSharedInstance().PlayerController = this;
             Data = PlayerData.GetSharedInstance();
             //subscribe to the crosshair hit event so we know if we can collect this item
             CrosshairItemDetector.WeaponHit += SetItemAtPoint;
@@ -34,7 +46,6 @@ namespace Assets.Code.Player
         {
             if (Input.GetMouseButtonDown(0))
                 WeaponAnimator.SetTrigger("AttackActive");
-            
             //DoAttackAnimation
             if (Input.GetKey(KeyCode.E))
             {
@@ -42,16 +53,14 @@ namespace Assets.Code.Player
                 {
                     if(ItemAtPoint.tag.Equals("Weapon"))
                     {
-                        print("Weapon E");
                         MoveWeaponToHand(ItemAtPoint.gameObject);
                     }else if(ItemAtPoint.tag.Equals("Interactable")){
-                        print("Interactable Item E");
+                        
                         ConsumeInteractableItem(ItemAtPoint.gameObject);
                     }
-                    
                 }
             }
-
+            //Drop weapon
             if (Input.GetKey(KeyCode.Q))
             {
                 if(EquippedWeapon != null)
@@ -68,7 +77,6 @@ namespace Assets.Code.Player
             {
                 item.Consume(gameObject);
             }
-
         }
 
         public void TakeDamage(int damage)
@@ -83,11 +91,27 @@ namespace Assets.Code.Player
         public void AddGold(int amount)
         {
             this.Data.Gold += amount;
+            GoldChanged();
+        }
+
+        public int GetGoldValue()
+        {
+            return this.Data.Gold;
+        }
+
+        public void AddHealth(int amount)
+        {
+            this.Data.Health += amount; //(this.Data.Health + amount >= 100) ? 100 : this.Data.Health + amount;
+            HealthChanged();
+        }
+
+        public int GetHealthValue()
+        {
+            return this.Data.Health;
         }
 
         public void SetItemAtPoint(GameObject obj)
         {
-            print("This is an object I can use");
             ItemAtPoint = obj.transform;
         }
 

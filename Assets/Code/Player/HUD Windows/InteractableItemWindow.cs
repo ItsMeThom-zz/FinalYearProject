@@ -44,13 +44,13 @@ public class InteractableItemWindow : MonoBehaviour {
         if (IsEnabled)
         {
             InfoCanvas.enabled = false;
-            print("Hiding Canvas this time");
+            //print("Hiding Canvas this time");
             InfoCanvas.enabled = false;
             IsEnabled = false;
         }
         else
         {
-            print("Called but not hiding");
+            //print("Called but not hiding");
         }
     }
 }

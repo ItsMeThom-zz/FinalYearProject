@@ -13,7 +13,8 @@ namespace Player
 
         private PlayerData()
         {
-
+            Health = 50;
+            Gold   = 0;
         }
 
         public static PlayerData GetSharedInstance()

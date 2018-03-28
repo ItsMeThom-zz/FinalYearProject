@@ -8,9 +8,11 @@ using Assets.Code.Player;
 
 namespace Player.InteractableItems
 {
+   
+
     public class TreasurePickup : InteractableItem, IInteractable
     {
-        public int Value = 0;
+        public int Value = 25;
         private void Awake()
         {
             this.Name = "Gold";
@@ -19,8 +21,7 @@ namespace Player.InteractableItems
 
         public void Consume(GameObject obj)
         {
-            var player = PlayerData.GetSharedInstance();
-            player.Gold += Value;
+            this.GameController.PlayerController.AddGold(Value);
             Destroy(this.gameObject);
         }
     }

@@ -462,6 +462,7 @@ namespace Utils
 
     public static class ExtensionUtils
     {
+        //populate an array with same values
         public static void Populate<T>(this T[] arr, T value)
         {
             for (int i = 0; i < arr.Length; i++)
@@ -476,6 +477,12 @@ namespace Utils
         {
             for (var i = 0; i < list.Count; i++)
                 list.Swap(i, UnityEngine.Random.Range(i, list.Count));
+        }
+
+        public static T Choose<T>(this IList<T> list)
+        {
+            int index = UnityEngine.Random.Range(0, list.Count);
+            return list[index];
         }
 
         //List quick swap extension method
