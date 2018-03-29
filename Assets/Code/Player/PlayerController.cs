@@ -82,7 +82,8 @@ namespace Assets.Code.Player
         public void TakeDamage(int damage)
         {
             this.Data.Health -= damage;
-            if(this.Data.Health <= 0)
+            HealthChanged();
+            if (this.Data.Health <= 0)
             {
                 //fire event tigger gameover
             }
@@ -101,7 +102,7 @@ namespace Assets.Code.Player
 
         public void AddHealth(int amount)
         {
-            this.Data.Health += amount; //(this.Data.Health + amount >= 100) ? 100 : this.Data.Health + amount;
+            this.Data.Health += amount;
             HealthChanged();
         }
 
