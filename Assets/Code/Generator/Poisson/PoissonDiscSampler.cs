@@ -6,7 +6,11 @@ using UnityEngine;
 using LibNoise.Generator;
 using LibNoise.Operator;
 
-
+/// <summary>
+/// Poisson-Disc Sampling attempts to populated a 2d space
+/// with points that are randomly placed, with a minimum required
+/// distance from all other points.
+/// </summary>
 public class PoissonDiscSampler// : MonoBehaviour
 {
 
@@ -19,8 +23,8 @@ public class PoissonDiscSampler// : MonoBehaviour
 
 
     public  int attempts;
-    private int chunkSize = 129;
-
+    public int SampleSpaceSize = 129;
+    public int MaxPoints = -1; //set to any positive number to constrain max points
     public int Radius { get; set; }
 
     float[,] placementMap;
@@ -36,8 +40,8 @@ public class PoissonDiscSampler// : MonoBehaviour
         active = new ArrayList();
         cell_width = Radius / Math.Sqrt(2);
 
-        cols = (int)(chunkSize / cell_width);
-        rows = (int)(chunkSize / cell_width);
+        cols = (int)(SampleSpaceSize / cell_width);
+        rows = (int)(SampleSpaceSize / cell_width);
 
         for (var n = 0; n < cols * rows; n++)
         {
@@ -50,11 +54,11 @@ public class PoissonDiscSampler// : MonoBehaviour
 
     public ArrayList GeneratePoints(int size)
     {
-        this.chunkSize = size; //get from TerChunk settings
+        this.SampleSpaceSize = size; //get from TerChunk settings
 
         //centerpoints
-        int rndX = chunkSize / 2;
-        int rndY = chunkSize / 2;
+        int rndX = SampleSpaceSize / 2;
+        int rndY = SampleSpaceSize / 2;
        
         int i = (int)(rndX / cell_width);
         int j = (int)(rndY / cell_width);
@@ -76,56 +80,54 @@ public class PoissonDiscSampler// : MonoBehaviour
             int randIndex = UnityEngine.Random.Range(0, active.Count);
             Vector3 position = (Vector3)active[randIndex];
             Boolean found = false;
-
-
+            int totalPoints = 0;
             for (var p = 0; p < attempts; p++)
             {
-                float angle = UnityEngine.Random.Range(0, 2 * (float)Math.PI);
-                offset = UnityEngine.Random.Range(Radius, 2 * Radius);
-                float offsetX = (float)Math.Cos(angle) * offset;
-                float offsetZ = (float)Math.Sin(angle) * offset;
+                //if(MaxPoints != -1 && totalPoints < MaxPoints)
+                //{
+                    float angle = UnityEngine.Random.Range(0, 2 * (float)Math.PI);
+                    offset = UnityEngine.Random.Range(Radius, 2 * Radius);
+                    float offsetX = (float)Math.Cos(angle) * offset;
+                    float offsetZ = (float)Math.Sin(angle) * offset;
 
-                sample = new Vector3(offsetX + position.x, 0, offsetZ + position.z);
+                    sample = new Vector3(offsetX + position.x, 0, offsetZ + position.z);
 
-                //check this x,z in the passed heightmap. if < sealevel, just fuck right off.
-                
-                int col = (int)(sample.x / cell_width);
-                int row = (int)(sample.z / cell_width);
-               
-             
-                if (col > 0 && row > 0 && col < cols && row < rows)
-                {
-                    Boolean ok = true;
+                    //check this x,z in the passed heightmap. if < sealevel, just fuck right off.
 
-                    for (int g = -1; g <= 1; g++)
+                    int col = (int)(sample.x / cell_width);
+                    int row = (int)(sample.z / cell_width);
+
+                    if (col > 0 && row > 0 && col < cols && row < rows)
                     {
-                        for (int h = -1; h <= 1; h++)
+                        Boolean ok = true;
+                        for (int g = -1; g <= 1; g++)
                         {
-                            int index = (col + g) + (row + h) * cols;
-                            if (index > 0 && index < rows * cols)
+                            for (int h = -1; h <= 1; h++)
                             {
-                                var neighbour = grid[index];
-                                if (neighbour != null)
+                                int index = (col + g) + (row + h) * cols;
+                                if (index > 0 && index < rows * cols)
                                 {
-                                    float dist = Vector3.Distance(sample, (Vector3)neighbour);
-                                    if (dist < Radius)
+                                    var neighbour = grid[index];
+                                    if (neighbour != null)
                                     {
-                                        ok = false;
+                                        float dist = Vector3.Distance(sample, (Vector3)neighbour);
+                                        if (dist < Radius)
+                                        {
+                                            ok = false;
+                                        }
                                     }
                                 }
                             }
-
+                        }
+                        if (ok)
+                        {
+                            found = true;
+                            grid[col + row * cols] = sample;
+                            active.Add(sample);
+                            totalPoints++;
                         }
                     }
-                    if (ok)
-                    {
-                        found = true;
-                        grid[col + row * cols] = sample;
-                        active.Add(sample);
-                    }
-
-                }
-
+                //}
             }
 
             if (!found)

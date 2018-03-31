@@ -13,16 +13,17 @@ public class NavPoint : MonoBehaviour {
     public bool Baked = false;
 
     public bool Colliding = false;
-    public bool DestroyOnCollision = true;
+    public bool DestroyOnCollision = false;
 
     public static float MAX_DISTANCE = 15f;
 
     private void Awake()
     {
         Neighbours = new List<NavPoint>();
+        this.gameObject.layer = 8; //nav layer of collision
         FindNeighbours();
         UpdateNeighbours();
-        //Baked = true;
+        Baked = true;
     }
 
     public NavPoint Previous
@@ -51,8 +52,13 @@ public class NavPoint : MonoBehaviour {
         {
             FindNeighbours();
             UpdateNeighbours();
-            CheckCollision();
+            //CheckCollision();
         }
+    }
+
+    private void Start()
+    {
+        
     }
 
     public void CheckCollision()
@@ -125,7 +131,7 @@ public class NavPoint : MonoBehaviour {
         }
     }
 
-    private void FindNeighbours()
+    public void FindNeighbours()
     {
         var nearby = Physics.OverlapSphere(this.transform.position, MAX_DISTANCE);
         if(nearby != null)
@@ -137,7 +143,7 @@ public class NavPoint : MonoBehaviour {
                     NavPoint potentialNeighbour = obj.GetComponent<NavPoint>();
                     if (potentialNeighbour)
                     {
-                        if (!Neighbours.Contains(potentialNeighbour))
+                        if (!Neighbours.Contains(potentialNeighbour) && ClearRaycastToNeighbour(potentialNeighbour.transform))
                         {
                             AddNeighbour(potentialNeighbour);
                             potentialNeighbour.AddNeighbour(this);
@@ -146,6 +152,26 @@ public class NavPoint : MonoBehaviour {
                 }
             }
         }
+    }
+
+    private bool ClearRaycastToNeighbour(Transform neighbour)
+    {
+        RaycastHit hit;
+        bool clear = true;
+        var neighbourPostion = neighbour.position;
+        var direction = neighbourPostion - this.transform.position;
+        if(Physics.Raycast(this.transform.position, direction, out hit))
+        {
+            //Debug.DrawRay(this.transform.position, direction, Color.red, 1);
+            if(hit.collider.gameObject != neighbour.gameObject)
+            {
+                //print("I hit " + hit.collider.gameObject.name);
+                clear = false;
+            }
+            
+        }
+        return clear;
+
     }
 
     private void OnDrawGizmos()
@@ -158,7 +184,10 @@ public class NavPoint : MonoBehaviour {
         }
         foreach(var n in Neighbours)
         {
-            Gizmos.DrawLine(transform.position, n.transform.position);
+            if(n != null)
+            {
+                Gizmos.DrawLine(transform.position, n.transform.position);
+            }
         }
         
     }

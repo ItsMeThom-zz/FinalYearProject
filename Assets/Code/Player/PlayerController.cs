@@ -167,6 +167,21 @@ namespace Assets.Code.Player
             WeaponAnimator.SetFloat("WeaponSpeed", 1.0f);
         }
 
+        public int GetWeaponDamage()
+        {
+            if(EquippedWeapon == null)
+            {
+                return 1;
+            }
+            if(EquippedWeapon.GetComponent<Weapon>() != null)
+            {
+                Weapon wep = EquippedWeapon.GetComponent<Weapon>();
+                var dmg = wep.DamageRoll;
+                print("DMG: " + dmg);
+                return dmg;
+            }
+            return 1;
+        }
        
     }
 }

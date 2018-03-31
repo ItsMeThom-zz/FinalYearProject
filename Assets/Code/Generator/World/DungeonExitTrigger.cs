@@ -24,6 +24,11 @@ public class DungeonExitTrigger : MonoBehaviour {
             {
                 Destroy(torch.gameObject);
             }
+            else
+            {
+                var t = GameObject.Find("Torch");
+                Destroy(t);
+            }
             other.transform.position = ReturnToWorldPosition;
         }
     }

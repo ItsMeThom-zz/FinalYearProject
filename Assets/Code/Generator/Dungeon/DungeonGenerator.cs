@@ -17,8 +17,10 @@ public class DungeonGenerator : MonoBehaviour {
     // Use this for initialization
 
     public int Iterations = 40;
-    public int Seed = 100;
+    public int Seed = 123456;
     public float Pause = 0.01f;
+
+    bool bossPlaced = false;
 
     private List<GameObject> PlacedPrefabs;
     private List<GameObject> PlacedWalls;
@@ -49,7 +51,14 @@ public class DungeonGenerator : MonoBehaviour {
 
     public void Generate()
     {
-        this.Seed = GameData.TriggeredDungeonSeed;
+        // Get Triggered Seed if available
+        // Otherwise use default
+        if(GameData.TriggeredDungeonSeed != 0)
+        {
+            this.Seed = GameData.TriggeredDungeonSeed;
+        }
+        Debug.Log("Seed " + Seed);
+        
         this.LoadPrefabs();
         this.PlacedPrefabs = new List<GameObject>();
         this.PlacedWalls = new List<GameObject>();
@@ -99,7 +108,6 @@ public class DungeonGenerator : MonoBehaviour {
                 partFits = TryPlacingPart(selectedPart, marker, out usedExit);
                 if (partFits)
                 {
-                    print("Part Fits! Used Exit: " + usedExit.position);
                     //handle coincidental connections
                     HandleCoincedentalConnections(partExits, availableExits);
                     PlacedPrefabs.Add(selectedPart);
@@ -126,7 +134,7 @@ public class DungeonGenerator : MonoBehaviour {
             Transform usedExit = null;
             var BossRoom = Instantiate(BossRoom_Prefab);
             int count = availableExits.Count - 1;
-            bool bossPlaced = false;
+           
             while(count >= 0)
             {
                 if (!bossPlaced)
@@ -153,11 +161,28 @@ public class DungeonGenerator : MonoBehaviour {
                 }
                 count--;
             }
+            if (!bossPlaced)
+            {
+                Debug.Log("Couldnt Place Boss Room!");
+            }
         }
+        if (this.PlacedPrefabs.Count < 10|| bossPlaced== false) {
+            Debug.Log("This dungeon is too small. Couldnt Place BOSS ROOM");
+            RetryGeneration();
+        }
+        else
+        {
+            //In the case we had to regenerate the seed, we restore it in the game controller
+            GameData.TriggeredDungeonSeed = Seed;
+            this.IsReady = true;
+        }
+       
+
         RemovePlacementColliders();
         //Add and initalise the grammar engine to rewrite the room contents
-        //var grammarEngine = gameObject.AddComponent<GenerativeGrammar.GrammarEngine>();
-        this.IsReady = true;
+        var grammarEngine = gameObject.AddComponent<GenerativeGrammar.GrammarEngine>();
+        gameObject.AddComponent<DungeonNavBaker>();
+        
 
     }
 
@@ -306,6 +331,13 @@ public class DungeonGenerator : MonoBehaviour {
         }
     }
 
+    public void RetryGeneration()
+    {
+        print("Attempting Regeneration with new seed " + (Seed + Seed));
+        Cleanup(); //clear old dungeon
 
+        Seed = Seed + Seed;
+        BeginInstanceGeneration(Seed);
+    }
 
 }

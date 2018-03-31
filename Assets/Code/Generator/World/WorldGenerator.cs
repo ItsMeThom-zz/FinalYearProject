@@ -287,11 +287,13 @@ namespace WorldGen
             }
 
             //set the random chunks to put features in <STATIC FOR DEV>
-            ChunkFeatures.Add(new Vector2i(0, 0),  FeatureType.DungeonEntrance);
-            ChunkFeatures.Add(new Vector2i(-1, -1), FeatureType.DungeonEntrance);
-            ChunkFeatures.Add(new Vector2i(5, 5),  FeatureType.DungeonEntrance);
+            //ChunkFeatures.Add(new Vector2i(0, 0),  FeatureType.DungeonEntrance);
+            //ChunkFeatures.Add(new Vector2i(-1, -1), FeatureType.DungeonEntrance);
+            //ChunkFeatures.Add(new Vector2i(5, 5),  FeatureType.DungeonEntrance);
+            PlaceDungeonsInWorld();
             this.IsGenerated = true;
             Debug.Log("World Map is Generated");
+            
         }
 
         public void PopulateBiomeGraph()
@@ -385,6 +387,33 @@ namespace WorldGen
         }
 
         #endregion
+
+        public void PlaceDungeonsInWorld()
+        {
+            for(int i = 0; i < 6; i++)
+            {
+                var x = UnityEngine.Random.Range(1, MAP_SIZE);
+                var z = UnityEngine.Random.RandomRange(1, MAP_SIZE);
+                ChunkFeatures.Add(new Vector2i(x,z), FeatureType.DungeonEntrance);
+                Debug.Log("Dungeon Placed at " + x + ", " + z);
+            }
+            //PoissonDiscSampler Sampler = new PoissonDiscSampler()
+            //{
+            //    Radius = 4,
+            //};
+            //var positions = Sampler.GeneratePoints(MAP_SIZE + 1);
+            //int totalPlaced = 0;
+            //for (int i = 0; i < positions.Count; i++)
+            //{
+            //    if (positions[i] != null && totalPlaced < 6)
+            //    {
+            //        Vector3 worldPos = (Vector3)positions[i];
+            //        Vector2i pos = new Vector2i((int)worldPos.x, (int)worldPos.z);
+            //        ChunkFeatures.Add(pos, FeatureType.DungeonEntrance);
+            //        totalPlaced++;
+            //    }
+            //}
+        }
     }
 }
 

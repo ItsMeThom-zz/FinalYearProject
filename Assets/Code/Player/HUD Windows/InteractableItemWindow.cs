@@ -34,6 +34,7 @@ public class InteractableItemWindow : MonoBehaviour {
             IsEnabled = true;
         }
         InteractableItem item = obj.GetComponent<InteractableItem>();
+        if(item == null) { print("NULL ITEM"); return; }
         _itemName.text = item.Name;
         _itemInfo.text = item.Info;
     }

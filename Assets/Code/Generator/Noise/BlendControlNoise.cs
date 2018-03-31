@@ -15,7 +15,7 @@ namespace Assets.NoiseProviders
         {
             if (_instance == null)
             {
-                int seed = UnityEngine.Random.Range(0, int.MaxValue);
+                int seed = GameController.GetSharedInstance().BaseSeed;
                 _instance = new BlendControlNoise(seed);
             }
             return _instance;

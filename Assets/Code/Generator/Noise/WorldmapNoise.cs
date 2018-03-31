@@ -15,7 +15,7 @@ namespace Assets.NoiseProviders
         {
             if (_instance == null)
             {
-                int seed = UnityEngine.Random.Range(0, int.MaxValue);
+                int seed = GameController.GetSharedInstance().BaseSeed;
                 _instance = new WorldmapNoise(seed);
             }
             return _instance;

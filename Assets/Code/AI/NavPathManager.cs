@@ -18,16 +18,17 @@ public class NavPathManager : MonoBehaviour {
     }
 
     public Vector3[] NaviagateTo(Vector3 destination) {
+        AllNavPoints = GameObject.FindGameObjectsWithTag("NavPoint");
         currentPath = new Stack<Vector3>();
         var currentNode = FindClosestToTarget(this.transform.position);
-        print("Closest node to me: " + currentNode.gameObject.name);
+        //print("Closest node to me: " + currentNode.gameObject.name);
         var endNode = FindClosestToTarget(destination);
-        print("Node I want : " + endNode.gameObject.name);
+        //print("Node I want : " + endNode.gameObject.name);
         if (currentNode == null || endNode == null || currentNode == endNode)
         {
-            if(currentNode == null) { print("current node null"); }
-            if(endNode == null) { print("end node null"); }
-            if(currentNode == endNode) { print(AllNavPoints.GetLength(0)+" COUNT"); }
+            //if(currentNode == null) { print("current node null"); }
+            //if(endNode == null) { print("end node null"); }
+            //if(currentNode == endNode) { print(AllNavPoints.GetLength(0)+" COUNT"); }
             return null;
         }
         var openList = new SortedList<float, NavPoint>();
@@ -50,6 +51,7 @@ public class NavPathManager : MonoBehaviour {
             }
             foreach(var neighbour in currentNode.Neighbours)
             {
+                if(neighbour == null) { break; }
                 if (closedList.Contains(neighbour) || openList.ContainsValue(neighbour))
                     continue;
                 neighbour.Previous = currentNode;
@@ -105,6 +107,7 @@ public class NavPathManager : MonoBehaviour {
 
     public GameObject GetRandomNavPointObject()
     {
+        AllNavPoints = AllNavPoints = GameObject.FindGameObjectsWithTag("NavPoint");
         int i = UnityEngine.Random.Range(0, AllNavPoints.GetLength(0));
         return AllNavPoints[i];
     }

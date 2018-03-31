@@ -1,12 +1,16 @@
-﻿using System.Collections;
+﻿using Assets.Code.Player;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using System;
+using System.Timers;
 
 public enum ActorState { Roam, Chase, Attack, Search} //search not yet implemented
 
 [RequireComponent(typeof(NavPathManager))]
-public class ActorController : MonoBehaviour {
+public class ActorController : MonoBehaviour, IDamageable {
 
+    public static int BOREDOM_MAX = 10;
     public GameController GameController;
     private NavPathManager PathManager;
     public Animator Animator;
@@ -23,7 +27,11 @@ public class ActorController : MonoBehaviour {
     private float WalkSpeed = 1.0f;
     private float RunSpeed = 2.6f;
     private float SightRange = 15.0f;
+    private int StateBordedomCounter = BOREDOM_MAX;
+    private Timer BoredomTimer;
     public ActorState State;
+
+    int HP = 30;
 
     private void Awake()
     {
@@ -60,14 +68,18 @@ public class ActorController : MonoBehaviour {
         switch (State)
         {
             case ActorState.Roam:
-                print("ROAM STATE");
-                Animator.SetBool("Roaming", true);
-                Animator.SetBool("Chasing", false);
-                Animator.SetBool("Attacking", false);
-                Roam();
+                //print("ROAM STATE");
+                
+                    print("I AM BORED NOW");
+                    Animator.SetBool("Roaming", true);
+                    Animator.SetBool("Chasing", false);
+                    Animator.SetBool("Attacking", false);
+                    //StateBordedomCounter = BOREDOM_MAX;
+                    Roam();
+                
                 break;
             case ActorState.Chase:
-                print("CHASE STATE");
+                //print("CHASE STATE");
                 Animator.SetBool("Roaming", false);
                 Animator.SetBool("Chasing", true);
                 Animator.SetBool("Attacking", false);
@@ -103,6 +115,7 @@ public class ActorController : MonoBehaviour {
     /// </summary>
     public void Roam()
     {
+        StartBoredomTimer();
         if(TargetPath == null)
         {
             while(TargetPath == null)
@@ -113,7 +126,7 @@ public class ActorController : MonoBehaviour {
         }
         if (currentNavPoint < TargetPath.GetLength(0))
         {
-            if ((TargetPath[currentNavPoint] - transform.position).magnitude > 0.1f)
+            if ((TargetPath[currentNavPoint] - transform.position).magnitude > 1.1f)
             {
                 Vector3 direction = TargetPath[currentNavPoint] - transform.position;
                 direction.y = 0;
@@ -142,8 +155,10 @@ public class ActorController : MonoBehaviour {
 
     public bool PlayerInViewRange()
     {
-        var Player = GameController.PlayerController.transform;
-        if(Vector3.Distance(this.Eyes.transform.position, Player.position) < SightRange)
+        var Player = GameController.PlayerController;
+        if(Player == null) { return false; }
+        var playerTransform = Player.transform;
+        if(Vector3.Distance(this.Eyes.transform.position, playerTransform.position) < SightRange)
         {
             Debug.Log("I am in Range of the Player");
             return true;
@@ -160,8 +175,10 @@ public class ActorController : MonoBehaviour {
     /// <returns></returns>
     public bool PlayerInDirectView()
     {
-        var Player = GameController.PlayerController.transform;
-        var direction = (Player.position + PlayerFaceHeight)- this.Eyes.transform.position;
+        var Player = GameController.PlayerController;
+        if(Player == null) { return false; }
+        var playerTransform = Player.transform;
+        var direction = (playerTransform.position + PlayerFaceHeight)- this.Eyes.transform.position;
         var angle = Vector3.Angle(direction, this.Eyes.transform.forward);
         if(angle < 45 && CanSeePlayerDirectly(direction))
         {
@@ -180,7 +197,9 @@ public class ActorController : MonoBehaviour {
     /// <returns></returns>
     public bool CanSeePlayerDirectly(Vector3 direction)
     {
-        var Player = GameController.PlayerController.gameObject;
+        var PlayerController = GameController.PlayerController;//.gameObject;
+        if(PlayerController == null){ return false; }
+        var Player = PlayerController.gameObject;
         bool clearSight = false;
         RaycastHit hit;
         if (Physics.Raycast(Eyes.transform.position, direction, out hit, this.SightRange))
@@ -196,8 +215,10 @@ public class ActorController : MonoBehaviour {
 
     public bool PlayerInAttackRange()
     {
-        var player = GameController.PlayerController.transform;
-        var distance = (this.transform.position - player.position).magnitude;
+        var player = GameController.PlayerController;//.transform;
+        if(player == null) { return false; }
+        var playerTransform = player.transform;
+        var distance = (this.transform.position - playerTransform.position).magnitude;
         if(distance <= 1.5f)
         {
             return true;
@@ -208,5 +229,18 @@ public class ActorController : MonoBehaviour {
         }
     }
 
+    public void TakeDamage(int damage)
+    {
+        HP -= damage;
+        if(HP <= 0)
+        {
+            print("Killed Goblin!");
+            Destroy(this.gameObject);
+        }
+    }
 
+    public void StartBoredomTimer()
+    {
+       
+    }
 }

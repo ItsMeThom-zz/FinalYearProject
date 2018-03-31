@@ -44,7 +44,7 @@ public class WorldController : MonoBehaviour
     {
         var canActivateCharacter = false;
 
-        StartButton.interactable = false;
+       
         Generator.UpdateTerrain(Player.position, Radius);
 
         do
@@ -67,6 +67,7 @@ public class WorldController : MonoBehaviour
 
     private void Update()
     {
+
         int currentCount = ((IEnumerable)System.Diagnostics.Process.GetCurrentProcess().Threads)
             .OfType<System.Diagnostics.ProcessThread>()
             .Where(t => t.ThreadState == System.Diagnostics.ThreadState.Running)

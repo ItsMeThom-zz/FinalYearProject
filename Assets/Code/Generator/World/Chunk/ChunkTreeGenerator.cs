@@ -92,7 +92,6 @@ public class ChunkTreeGenerator : MonoBehaviour
                     Vector3 randomScale = new Vector3(scaleModifier, scaleModifier, scaleModifier);
                     var spawnPosition = pos + offsetPosition;
 
-                    //TODO: Get a tree from Generator now
                     GameObject asset = ChooseRandomAsset();
                     GameObject spawnedAsset = Instantiate(asset, spawnPosition, randomRotation);
                     spawnedAsset.name = "Tree (Valid)";
