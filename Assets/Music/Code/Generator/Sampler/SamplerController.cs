@@ -49,7 +49,6 @@ public class SamplerController : MonoBehaviour {
             samplerVoice.name = "Sample Voice";
             _samplerVoices[i] = samplerVoice;
         }
-
         _nextVoiceIndex = 0;
         
     }

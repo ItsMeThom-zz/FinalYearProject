@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace Music
 {
-    public class MusicMood
+    public class MusicMood : ScriptableObject
     {
         private static MusicMood _instance;
 
@@ -15,14 +15,9 @@ namespace Music
         public Mood Combat;
 
 
-        public static MusicMood GetSharedInstance()
+        private void Awake()
         {
-            if(_instance == null)
-            {
-                _instance = new MusicMood();
-                _instance.LoadMoods();
-            }
-            return _instance;
+            LoadMoods();
         }
 
         private void LoadMoods()

@@ -21,7 +21,7 @@ namespace Music
 
         public MusicGenerator Generator { get; set; }
 
-        private Mood currentMood;
+        private Mood currentMood;// = ScriptableObject.CreateInstance<MusicMood>().World;
         //Tracks contain all the notes we need to play
         Queue<IMusicalValue> LeadTrack;
         Queue<IMusicalValue> MelodyTrack;
@@ -32,6 +32,13 @@ namespace Music
             MelodyTrack = new Queue<IMusicalValue>();
             Generator = MusicGenerator.GetInstance();
             Sampler = GetComponent<SamplerController>();
+            //set starting mood
+            currentMood = ScriptableObject.CreateInstance<MusicMood>().World;
+            Sampler.LeadInstrument = currentMood.LeadInstrumentSample;
+            Sampler.MelodyInstrument = currentMood.MelodyInstrumentSample;
+            Sampler.SetASR(currentMood.ASRSettings);
+            Metronome metro = FindObjectOfType<Metronome>();
+            metro.bpm = currentMood.Tempo;
             //enqueue starting tracks
             Generator.Generate();
             GetNextTracks();
@@ -54,8 +61,11 @@ namespace Music
                 //Changing mood at some point within this
                 MusicGenerator MusicGen = MusicGenerator.GetInstance();
                 Metronome metro = FindObjectOfType<Metronome>();
+                MusicGen.GetMood();
                 if (MusicGen.CurrentMood != currentMood)
                 {
+                    Debug.Log("CHANGING MOOD");
+                    MusicGen.Generate();
                     currentMood = MusicGen.CurrentMood;
                     var emptyBar = MusicGen.GetBar();
                     foreach (IMusicalValue note in emptyBar)
@@ -63,7 +73,6 @@ namespace Music
                         LeadTrack.Enqueue(note);
                         MelodyTrack.Enqueue(note);
                     }
-                    
                     metro.bpm = currentMood.Tempo;
                     Sampler.LeadInstrument = currentMood.LeadInstrumentSample;
                     Sampler.MelodyInstrument = currentMood.MelodyInstrumentSample;
@@ -91,6 +100,8 @@ namespace Music
             if(newLeadTrack.Count != newMelodyTrack.Count)
             {
                 Debug.Log("Lead and Melody Tracks are of differnt lengths!");
+                Debug.Log(newLeadTrack.Count);
+                Debug.Log(newMelodyTrack.Count);
             }
             else
             {

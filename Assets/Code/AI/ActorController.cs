@@ -90,7 +90,7 @@ public class ActorController : MonoBehaviour, IDamageable {
                 Animator.SetBool("Roaming", false);
                 Animator.SetBool("Chasing", false);
                 Animator.SetBool("Attacking", true);
-                Attack();
+                Attack(GameController.PlayerController.transform);
                 break;
             default:
                 Roam();
@@ -147,9 +147,13 @@ public class ActorController : MonoBehaviour, IDamageable {
         }
     }
 
-    public void Attack()
+    public void Attack(Transform target)
     {
-        
+        Vector3 direction = target.transform.position - this.transform.position;
+        direction.y = 0;
+        float step = RunSpeed * Time.deltaTime;
+        transform.position = Vector3.MoveTowards(transform.position, target.transform.position, step);
+        transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(direction), 0.1f);
     }
     #endregion
 

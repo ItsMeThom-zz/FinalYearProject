@@ -79,9 +79,9 @@ namespace Music
             int noteIndex = AllNotes.IndexOf(n);
             int intervalIndex = (noteIndex + interval) % 12;
             if (intervalIndex < 0) { intervalIndex = 12 + intervalIndex; }
-            Debug.Log("Note: " + noteIndex);
-            Debug.Log("Interval: " + interval);
-            Debug.Log("New Note: " + intervalIndex);
+            //Debug.Log("Note: " + noteIndex);
+            //Debug.Log("Interval: " + interval);
+            //Debug.Log("New Note: " + intervalIndex);
             return AllNotes[intervalIndex];
         }
 

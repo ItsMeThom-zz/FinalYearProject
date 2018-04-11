@@ -13,7 +13,8 @@ namespace Music
     public class MusicGenerator
     {
         private static MusicGenerator _instance;
-        private MusicMood MusicMood = MusicMood.GetSharedInstance();
+        private MusicMood MusicMood;// = //MusicMood.GetSharedInstance();
+        private GameController GameController = GameController.GetSharedInstance();
         public Mood CurrentMood;
         public static bool FirstPass = true;
         List<IMusicalValue> CurrentLead;
@@ -35,6 +36,8 @@ namespace Music
                 _instance.CurrentLead = new List<IMusicalValue>();
                 _instance.CurrentMelody = new List<IMusicalValue>();
                 _instance.CurrentMelodyPatterns = new List<List<int?>>();
+                _instance.CurrentMood = ScriptableObject.CreateInstance<MusicMood>().World;
+                _instance.GameController.MusicGenerator = _instance;
             }
             return _instance;
         }
@@ -42,26 +45,33 @@ namespace Music
         public void GetMood()
         {
             //test mood
-            
-            Debug.Log(CurrentMood.Key);
+            if (GameController.PlayerInCombat)
+            {
+                Debug.Log("COMBAT");
+                CurrentMood = ScriptableObject.CreateInstance<MusicMood>().Combat;
+            }else if (GameController.PlayerInDungeon)
+            {
+                Debug.Log("DUNGEON");
+                //CurrentMood = MusicMood.Dungeon;
+                CurrentMood = ScriptableObject.CreateInstance<MusicMood>().Dungeon;
+            }
+            else
+            {
+                Debug.Log("WORLD");
+                //CurrentMood = MusicMood.World;
+                CurrentMood = ScriptableObject.CreateInstance<MusicMood>().World;
+            }
+            //Debug.Log(CurrentMood.Key);
         }
 
         public void Generate()
         {
-            Debug.Log("Generating Track");
-            if (!MusicGenerator.FirstPass)
-            {
-                CurrentMood = MusicMood.Combat;
-            }
-            else
-            {
-                CurrentMood = MusicMood.World;
-            }
-            
+            GetMood();
+            CurrentLead.Clear();
+            CurrentMelody.Clear();
             var progressionGraph = GetProgressionTypeForKey(CurrentMood.Key);
             
             //choose lead progression
-            //TODO: Select this by weight later
             Numeral tonicNumeral = Numeral.I;
             if (!progressionGraph.ContainsKey(tonicNumeral))
             {
@@ -228,6 +238,10 @@ namespace Music
                     {
                         currentPos -= step; //step down
                     }
+                    else if(step + currentPos <= 0)
+                    {
+                        currentPos = 0;
+                    }
                     else
                     {
                         currentPos += step;
@@ -268,7 +282,7 @@ namespace Music
 
         public List<IMusicalValue> GetLeadTrack()
         {
-            Debug.Log("Current lead size = " + CurrentLead.Count);
+            //Debug.Log("Current lead size = " + CurrentLead.Count);
             return CurrentLead;
         }
 

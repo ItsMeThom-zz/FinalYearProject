@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using UnityEngine;
+using UnityStandardAssets.Characters.FirstPerson;
 using Weapons;
 
 namespace Assets.Code.Player
@@ -21,6 +22,7 @@ namespace Assets.Code.Player
         public  Transform  ItemAtPoint;
         public  Animator   WeaponAnimator;
 
+        public bool GodMode = false;
         #region UI Events
         public delegate void GoldChangedEvent();
         public static event GoldChangedEvent GoldChanged;
@@ -67,6 +69,23 @@ namespace Assets.Code.Player
                 {
                     MoveWeaponFromHand();
                 }
+            }
+
+            if (Input.GetKey(KeyCode.T))
+            {
+                
+                Debug.Log("GOD MODE ON");
+                gameObject.GetComponent<FlyCamera>().enabled = true;
+                gameObject.GetComponent<RigidbodyFirstPersonController>().enabled = false;
+                gameObject.GetComponent<Rigidbody>().useGravity = false;
+                
+            }
+            if (Input.GetKey(KeyCode.Y))
+            {
+                Debug.Log("GOD MODE OFF");
+                gameObject.GetComponent<FlyCamera>().enabled = false;
+                gameObject.GetComponent<RigidbodyFirstPersonController>().enabled = true;
+                gameObject.GetComponent<Rigidbody>().useGravity = true;
             }
         }
 
