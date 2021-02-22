@@ -6,7 +6,7 @@ Code for my final year project, titled "Procedural Content Generation in Game De
 Unity 2018.2 based first person action-rpg.
 
 Some of the features:
-* Procedural generation of landmasses
+* Procedural generation of landmasses (10km^2 map area, in infinite chunk based world)
   * Threaded _chunk-based rendering_ around the player to load/unload the world as they move.
   * Biomes using _K-Nearest-Neighbour_ sampling to determine biome types from temperature/moiusture/heightmaps
   * Chainable builder pattern for noise generation to allow combiniations of noise layers and types to produce different kinds of features
